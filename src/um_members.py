@@ -1,11 +1,14 @@
-import interface.forms
+import data.forms
 
-login = interface.forms.Login()
+# TODO: interface (controllers), storage (database + file), logging, ...
+
+login = data.forms.Login()
 result = login.run()
 
 print(result)
 
 print(login.validate(result))
+print(login.validate({ "username": "", "password": "" }))
 print(login.validate({ "username": 1, "password": 2 }))
 print(login.validate({ "username": "1" }))
 print(login.validate({ "username": "1", "password": "2", "extra": "3" }))

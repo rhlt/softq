@@ -1,4 +1,4 @@
-import interface.input as input
+import data.input as input
 
 class Form:
     """Create a form (list of inputs) for the user to fill out"""
@@ -32,7 +32,7 @@ class Form:
             if field not in self.fields:
                 # Model contains unknown field
                 return False
-            if not self.fields[field].validate(model[field]):
+            if not self.fields[field].validate(model[field], False):
                 # Model value not valid
                 return False
         return True

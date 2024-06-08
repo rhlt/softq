@@ -4,8 +4,7 @@ import re
 class Text:
     """Show input to receive a validated text (string) value"""
 
-
-    def __init__(self, question = "", rules = None):
+    def __init__(self, question = "", rules = None, allow_empty = False):
         """Initialize values and set defaults"""
         self.question = str(question) # force string 
         self.rules = {
@@ -13,13 +12,14 @@ class Text:
             # By default, do not allow whitespace or control characters (ASCII < 32)
             "Input should not contain ASCII control characters": lambda str: reduce(lambda valid, char: ord(char) >= 32 and valid, str, True)
         }
+        if not allow_empty:
+            # Add the rule that input must not be empty
+            self.rules["Input should not be empty"] = lambda str: len(str) > 0
         if isinstance(rules, dict):
             for rule in rules:
-                if rule in self.rules:
-                    continue
                 self.rules[rule] = rules[rule]
             
-    def validate(self, value):
+    def validate(self, value, show_error = True):
         """Validate inputted value and print any rules that are violated"""
         valid = True
         if value is None:
@@ -28,7 +28,8 @@ class Text:
             return False
         for rule in self.rules:
             if not self.rules[rule](value):
-                print(":: " + rule)
+                if show_error:
+                    print(":: " + rule)
                 valid = False
         return valid
 
@@ -49,19 +50,16 @@ class Text:
 class Number(Text):
     """Show input to receive a validated number (positive integer) value"""
 
-    def __init__(self, question = "", rules = None, retry = True, allow_empty = False):
+    def __init__(self, question = "", rules = None, allow_empty = False):
         """Initialize number input based on text input"""
         if not isinstance(rules, dict):
             rules = {}
-        if not allow_empty:
-            # Add the rule that input must not be empty
-            rules["Input should not be empty"] = lambda str: len(str) > 0
         # Add rule that input must only contain digits
         rules["Input should only contain the digits 0-9"] = lambda str: re.match(r"^\d*$", str)
-        super().__init__(question, rules, retry)
+        super().__init__(question, rules, allow_empty)
 
     def run(self):
-        """Run the input and convert result to int (unless it is None or "", which is possible if retry is false or allow empty is true)"""
+        """Run the input and convert result to int (unless it is None or "", which is possible if allow empty is true)"""
         value = super().run()
         if value is None:
             return None
@@ -71,18 +69,15 @@ class Number(Text):
     
     
 class FromList(Text):
-    """Show input to receive a text (string) value that must be one of a specified set of values"""
+    """Show input to receive a text (string) value that must be one of a specified list of values"""
 
-    def __init__(self, question = "", allowed_values = [], allow_empty = False, retry = True):
+    def __init__(self, question = "", allowed_values = []):
         if not isinstance(allowed_values, list) or len(allowed_values) == 0:
             # If allowed_values is invalid, make sure to allow value to be empty
-            allowed_values = []
-            allowed_values_as_string = "(empty value)"
-            allow_empty = True
+            allowed_values = [""]
+            allowed_values_as_string = ""
         else:
-            allowed_values_as_string = ", ".join(allowed_values)
-            if allow_empty:
-                allowed_values_as_string += ", (empty value)"
+            allowed_values_as_string = "','".join(allowed_values)
         
-        rules = { "Input should be one of the following: " + allowed_values_as_string: lambda str: (str == "" and allow_empty) or str in allowed_values }
-        super().__init__(question, rules, retry)
+        rules = { "Input should be one of the following: '" + allowed_values_as_string + "'": lambda str: str in allowed_values }
+        super().__init__(question, rules, "" in allowed_values)
