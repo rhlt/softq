@@ -2,9 +2,9 @@ import data.forms
 import data.input
 import data.rules
 
-import interface.menu
+import logic.menu
 
-# TODO: interface (controllers), storage (database + file), logging, ...
+# TODO: authorization (user password/role check) storage (database + file), logging, ...
 
 
 # login = data.forms.Login()
@@ -21,7 +21,7 @@ import interface.menu
 # result = member.run()
 # print(result)
 
-interface.menu.main.run()
+logic.menu.main.run()
 
 # data.input.Text("ID", [data.rules.tenDigits, data.rules.twoDigitYear, data.rules.checksum]).run()
 # data.input.Text("Date", [data.rules.date]).run()

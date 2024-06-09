@@ -1,8 +1,8 @@
-# Display menu interfaces
+# Logic to display menu interfaces
 
 import data.input
-import interface.members
-import interface.users
+import logic.members
+import logic.users
 
 class Menu:
     """Base menu class that displays a menu of options and asks the user to input a number to choose a menu option"""
@@ -53,7 +53,7 @@ class MenuOption:
 main = Menu("Welcome to the Member Management System", [
     MenuOption("Display list of members", lambda: print("\nLIST MEMBERS")), # TODO AUTHORIZATION
     MenuOption("Search members", lambda: print("\nSEARCH MEMBERS")), # TODO AUTHORIZATION
-    MenuOption("Add new member", interface.members.add_member), # TODO AUTHORIZATION
-    MenuOption("Change your password", interface.users.change_password), # TODO AUTHORIZATION
+    MenuOption("Add new member", logic.members.add_member), # TODO AUTHORIZATION
+    MenuOption("Change your password", logic.users.change_password), # TODO AUTHORIZATION
     MenuOption("Log out (quit program)", lambda: True),
 ])
