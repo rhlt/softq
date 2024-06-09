@@ -1,9 +1,9 @@
-# Classes for input types and validation, which can be used to receive and validate input
+# Classes for input types and validation, which can be used to receive input and validate data
 
 import data.rules
 
 class Text:
-    """Show input to receive a validated text (string) value"""
+    """Handle a validated text (string) value"""
 
     def __init__(self, name, rules = None, allow_empty = False):
         """Initialize values and set defaults"""
@@ -31,9 +31,9 @@ class Text:
         return valid
 
     def run(self):
-        """Run the input: ask the user and validate the response (the response is guaranteed to be valid, or None)"""
+        """Ask the user and validate the response (the response is guaranteed to be valid, or None)"""
         try:
-            value = input("> " + self.name + ": ")
+            value = input("> " + self.name + (" <" if isinstance(self, EmptyValue) else ": "))
         except:
             # Most likly because user pressed Ctrl+C
             print() # newline
@@ -45,7 +45,7 @@ class Text:
 
 
 class Number(Text):
-    """Show input to receive a validated number (positive integer) value"""
+    """Handle a validated number (positive integer) value"""
 
     def __init__(self, name, rules = None, allow_empty = False):
         """Initialize number input based on text input"""
@@ -68,7 +68,7 @@ class Number(Text):
     
     
 class FromList(Text):
-    """Show input to receive a text (string) value that must be one of a specified list of values"""
+    """Handle a text (string) value that must be one of a specified list of values"""
 
     def __init__(self, name, allowed_values = []):
         """Initialize input with custom rule to check if value is in the list of allowed values"""
@@ -81,7 +81,7 @@ class FromList(Text):
 
 
 class ReadOnly(Text):
-    """Read-only field (never show input but allow validation)"""
+    """Handle a read-only value (does not allow user input but but allows for validation)"""
 
     def __init__(self, name, rules = None):
         """Initialize as always allowing empty (because it is read-only)"""
@@ -90,3 +90,11 @@ class ReadOnly(Text):
     def run(self):
         """Value is not editable so no input should be asked"""
         return None
+    
+
+class EmptyValue(Text):
+    """Handle an input that should not receive a response ('Press enter to continue')"""
+
+    def __init__(self, name):
+        """Initialize a Text input that must be empty"""
+        super().__init__(name, [data.rules.mustBeEmpty], True)

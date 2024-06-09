@@ -1,15 +1,16 @@
-# Validation rules used for checking input
+# Validation rules used for checking data
 
 from functools import reduce 
 import re
 import data.datetime
 
 # General/common rules
-notTooLong = lambda name: (f"{name} should not be longer than 100 characters", lambda s: isinstance(s, str) and len(s) <= 100) # Always applied
+notTooLong = lambda name: (f"{name} should not be longer than 100 characters", lambda s: isinstance(s, str) and len(s.encode('utf-8')) <= 100) # Always applied
 noControlCharacters = lambda name: (f"{name} should not contain ASCII control characters", lambda s: reduce(lambda valid, char: ord(char) >= 32 and valid, s, True)) # Always applied
-notEmpty = lambda name: (f"{name} should not be empty", lambda s: len(s) > 0) # Applied unless "allow_empty" is explicitly set to True 
+notEmpty = lambda name: (f"{name} should not be empty", lambda s: isinstance(s, str) and len(s) > 0) # Applied unless "allow_empty" is explicitly set to True 
+mustBeEmpty = lambda name: (f"{name} must be empty", lambda s: isinstance(s, str) and len(s) == 0) # For "Press enter to continue" displays
 digitsOnly = lambda name: (f"{name} should only contain the digits 0-9", lambda s: re.search(r"^\d*$", s))
-valueInList = lambda values: lambda name: (f"{name} should be one of the following: " + ", ".join(values), lambda s: s.upper() in map(lambda v: str(v).upper(), values))
+valueInList = lambda values: lambda name: (f"{name} should be one of the following: " + ", ".join(filter(lambda v: len(v) > 0, values)), lambda s: s.upper() in map(lambda v: str(v).upper(), values))
 
 # Username/Password rules
 atLeastThisLong = lambda length: lambda name: (f"{name} should have at least {length} characters", lambda s: isinstance(s, str) and len(s) >= length)

@@ -1,8 +1,12 @@
-import data.forms
-import data.input
-import data.rules
+"""
+Assignment for Analysis 8, Software Quality (INFSWQ21-A)
+Name: Ruben Holthuijsen
+Student number: 1064459
+"""
 
-import logic.menu
+if __name__ == '__main__':
+    import logic.menus
+    logic.menus.main.run()
 
 # TODO: authorization (user password/role check) storage (database + file), logging, ...
 
@@ -20,8 +24,6 @@ import logic.menu
 # member = data.forms.Member()
 # result = member.run()
 # print(result)
-
-logic.menu.main.run()
 
 # data.input.Text("ID", [data.rules.tenDigits, data.rules.twoDigitYear, data.rules.checksum]).run()
 # data.input.Text("Date", [data.rules.date]).run()

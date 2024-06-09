@@ -46,7 +46,6 @@ class Login(Form):
         """Define username and password fields"""
         
         self.fields = {
-            # No complicated validation here (because hard-coded super admin does not match, and also this will be checked against the values in the database anyway)
             "username": data.input.Text("Username"),
             "password": data.input.Text("Password"),
         }
@@ -69,8 +68,6 @@ class ChangePassword(Form):
                 data.rules.containsSpecial,
             ]),
         }
-    
-
 
 
 class User(Form):
@@ -94,7 +91,7 @@ class User(Form):
                 data.rules.containsDigit,
                 data.rules.containsSpecial,
             ]),
-            "admin": data.input.ReadOnly("Is admin?", [data.rules.valueInList([0, 1])])
+            "admin": data.input.ReadOnly("Admin", [data.rules.valueInList(["Y", "N"])])
         }
 
 

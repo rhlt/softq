@@ -1,6 +1,7 @@
 # Logic to change user information
 
 import data.forms
+import data.input
 
 def change_password():
     # Let user change password
@@ -15,6 +16,6 @@ def change_password():
     # TODO check and save new password
 
     print(result)
-    
-    
-    
+    print("Your password has been changed or something")
+
+    data.input.EmptyValue("Press Enter to return to the main menu").run()

@@ -14,6 +14,5 @@ def valid_date(date):
     # Check if a date is valid in the format YYYY-mm-dd
     try:
         datetime.strptime(date, "%Y-%m-%d")
-        return date[:4] >= "2000"
     except ValueError:
         return False
