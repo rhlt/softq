@@ -73,7 +73,7 @@ class User(Form):
                 data.rules.containsDigit,
                 data.rules.containsSpecial,
             ]),
-            "admin": data.input.ReadOnly("Is admin?", [data.rules.valueInList(["Yes", "No"])])
+            "admin": data.input.ReadOnly("Is admin?", [data.rules.valueInList([0, 1])])
         }
 
 
@@ -84,7 +84,7 @@ class Member(Form):
         """Define member data fields"""
         
         self.fields = {
-            "id": data.input.ReadOnly("ID", [data.rules.memberID]),
+            "id": data.input.ReadOnly("ID", [data.rules.tenDigits, data.rules.twoDigitYear, data.rules.checksum]),
             "firstName": data.input.Text("First name"),
             "lastName": data.input.Text("Last name"),
             "age": data.input.Number("Age"),

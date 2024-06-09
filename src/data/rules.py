@@ -21,10 +21,14 @@ containsUppercase = lambda name: (f"{name} should contain at least one uppercase
 containsDigit = lambda name: (f"{name} should contain at least one digit", lambda s: re.search(r"\d", s))
 containsSpecial = lambda name: (f"{name} should contain at least one special character", lambda s: re.search(r"[^A-Za-z\d]", s))
 
-# User/Member profile rules
-memberID = lambda name: (f"{name} should be a valid ID", lambda s: re.search(r"^\d{10}$", s) and data.datetime.valid_short_year(s[:2]) and str(reduce(lambda check, digit: (check + int(digit)) % 10, s[:9], 0)) == s[9:])
+# Member ID rules
+tenDigits = lambda name: (f"{name} should be ten digits", lambda s: re.search(r"^\d{10}$", s))
+twoDigitYear = lambda name: (f"{name} should start with a two-digit year that is not in the future", lambda s: data.datetime.valid_short_year(s[:2]))
+checksum = lambda name: (f"{name} should have a valid checksum", lambda s: str(reduce(lambda check, digit: (check + ord(digit) - 8) % 10, s[:9], 0)) == s[9:])
+
+# Profile fields rules
 date = lambda name: (f"{name} should be a valid date (YYYY-MM-DD)", data.datetime.valid_date)
-homeNumber = lambda name: (f"{name} should be a valid home number (number + possible suffix)", lambda s: re.search(r"^\d+\w*$", s))
+homeNumber = lambda name: (f"{name} should be a valid home number (number + possible suffix)", lambda s: re.search(r"^\d+[\s\-]?[a-zA-Z\d]*$", s))
 postcode = lambda name: (f"{name} should be a valid postcode (such as 1234AB)", lambda s: re.search(r"^\d{4}[a-zA-Z]{2}$", s)) 
 email = lambda name: (f"{name} should be a valid e-mail address", lambda s: re.search(r"^([a-zA-Z\d][a-zA-Z\d+\-.]*[a-zA-Z\d]|[a-zA-Z\d])@([a-zA-Z\d][a-zA-Z\d\-.]*[a-zA-Z\d]|[a-zA-Z\d])\.[a-zA-Z\d]+$", s))
 phone = lambda name: (f"{name} should be a valid eight-digit mobile phone number (excluding 06 or +31 6)", lambda s: re.search(r"^\d{8}$", s))
