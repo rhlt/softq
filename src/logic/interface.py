@@ -1,6 +1,6 @@
 # Logic to display interfaces
 
-import data.input
+import data.fields
 import authorization.user
 
 class Menu:
@@ -17,7 +17,7 @@ class Menu:
         print(self.title)
         print("*" * len(self.title))
 
-        if not authorization.user.check_access(self.access):
+        if not authorization.user.check_access(self.access, f"Access to {self.__class__.__name__} was refused"):
             # No access to this part of the system
             return None
         
@@ -31,7 +31,7 @@ class Menu:
             i += 1
         
         # Receive user input
-        option_input = data.input.FromList("Option", option_numbers)
+        option_input = data.fields.FromList("Option", option_numbers)
         choice = option_input.run()
         if choice is None:
             return

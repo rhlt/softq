@@ -1,5 +1,6 @@
 # Authorization classes
 
+import authorization.logging
 import authorization.roles
 import data.forms
 
@@ -13,15 +14,22 @@ def name():
     """Get the current user name"""
     return currentUser.name if currentUser is not None else None
 
+def logged_in():
+    """Return if user is correctly logged in"""
+    return currentUser is not None and not currentUser.unauthorized()
+
 def login():
     """Let a user enter their username and password to log in"""
     global currentUser, maxAttempts
     
-    if currentUser is None:
-        # Mark current user as unauthorized (will ask for login)
-        currentUser = authorization.roles.Unauthorized(None)
+    if logged_in():
+        # Already logged in
+        return False
     
-    while isinstance(currentUser, authorization.roles.Unauthorized) and maxAttempts > 0:
+    # Mark current user as unauthorized (will ask for login)
+    currentUser = authorization.roles.Unauthorized(None)
+    
+    while currentUser.unauthorized() and maxAttempts > 0:
         # Ask for login details until user is no longer unauthorized
 
         print("Please log in:")    
@@ -42,21 +50,23 @@ def login():
             # TODO Find user by username
             pass
 
-        if isinstance(currentUser, authorization.roles.Unauthorized):
+        if currentUser.unauthorized():
             # Not logged in correctly
             print(" :: The username or password is incorrect")
+            authorization.logging.log("Incorrect login")
             maxAttempts -= 1
-            open(r".login-attempts", "w").write(str(maxAttempts))
+            open(r"./storage/.login-attempts", "w").write(str(maxAttempts))
         
     if maxAttempts <= 0:
         # Too many failed logins
         print("You have reached the maximum amount of login attempts.")
+        authorization.logging.log("Login blocked: reached maximum amount of login attempts", True)
         return False
 
     return True
 
 
-def check_access(role):
+def check_access(role, report, suspicious = False):
     """Check if current user has access to role"""
     global currentUser
     
@@ -64,11 +74,11 @@ def check_access(role):
         # Canceled login
         return False
 
-    if isinstance(currentUser, authorization.roles.Unauthorized):
+    if not currentUser.unauthorized():
         print("You are now logged in as " + currentUser.name)
 
     if not currentUser.can(role):
-        # LOG currentUser.name
+        authorization.logging.log(report, suspicious)
         print("You are not allowed to perform this action. This incident will be reported.")
         return False
 

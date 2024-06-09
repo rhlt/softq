@@ -12,6 +12,10 @@ class Unauthorized:
         """Can't perform any actions"""
         return False
     
+    def unauthorized(self):
+        """See if the user is completely unauthorized (not correctly logged in)"""
+        return self.__class__.__name__ == "Unauthorized"
+    
 
 class Consultant(Unauthorized):
     """Consultant class"""
