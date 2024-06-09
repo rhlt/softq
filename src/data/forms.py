@@ -1,4 +1,5 @@
-import data.input as input
+import data.input
+import data.rules
 
 class Form:
     """Create a form (list of inputs) for the user to fill out"""
@@ -7,13 +8,13 @@ class Form:
         self.fields = {}
 
     def run(self):
-        """Ask the user to fill out the form (the result is guaranteed to be a validated model, or None)"""
+        """Ask the user to fill out the form; the result is guaranteed to be a validated, completely filled model (with the possible exception of ReadOnly fields, which may have None value), or None)"""
         valid = True
         result = {}
         for field in self.fields:
             # Run all inputs
             value = self.fields[field].run()
-            if value == None:
+            if value == None and not isinstance(self.fields[field], data.input.ReadOnly):
                 valid = False
                 break
             result[field] = value
@@ -32,20 +33,68 @@ class Form:
             if field not in self.fields:
                 # Model contains unknown field
                 return False
-            if not self.fields[field].validate(model[field], False):
+            if not self.fields[field].validate(model[field], False, False):
                 # Model value not valid
                 return False
         return True
 
 
 class Login(Form):
-    """Create a login form asking for username and password"""
+    """Create a login form with username and password"""
 
     def __init__(self):
         """Define username and password fields"""
         
-        super().__init__()
         self.fields = {
-            "username": input.Text("Enter your username: "),
-            "password": input.Text("Enter your password: "),
+            # No complicated validation here (because hard-coded super admin does not match, and also this will be checked against the values in the database anyway)
+            "username": data.input.Text("Username"),
+            "password": data.input.Text("Password"),
+        }
+
+
+class User(Form):
+    """Create a user form with username, password and profile information"""
+
+    def __init__(self):
+        """Define user profile fields"""
+        
+        self.fields = {
+            "username": data.input.Text("Username", [
+                data.rules.atLeastThisLong(8),
+                data.rules.noLongerThan(10),
+                data.rules.startWithLetterOrUnderscore,
+                data.rules.validUsernameCharacters,
+            ]),
+            "password": data.input.Text("Password", [
+                data.rules.atLeastThisLong(12),
+                data.rules.noLongerThan(30),
+                data.rules.containsLowercase,
+                data.rules.containsUppercase,
+                data.rules.containsDigit,
+                data.rules.containsSpecial,
+            ]),
+            "admin": data.input.ReadOnly("Is admin?", [data.rules.valueInList(["Yes", "No"])])
+        }
+
+
+class Member(Form):
+    """Create a form for member data"""
+
+    def __init__(self):
+        """Define member data fields"""
+        
+        self.fields = {
+            "id": data.input.ReadOnly("ID", [data.rules.memberID]),
+            "firstName": data.input.Text("First name"),
+            "lastName": data.input.Text("Last name"),
+            "age": data.input.Number("Age"),
+            "gender": data.input.FromList("Gender", ["M", "F", "X"]),
+            "weight": data.input.Number("Weight"),
+            "street": data.input.Text("Street"),
+            "no": data.input.Text("Number", [data.rules.homeNumber]),
+            "zip": data.input.Text("ZIP (Postcode)", [data.rules.postcode]),
+            "city": data.input.FromList("City", ["Amsterdam", "Rotterdam", "Den Haag", "Utrecht", "Eindhoven", "Groningen", "Leiden", "Delft", "Dordrecht", "Gouda"]),
+            "email": data.input.Text("E-mail address", [data.rules.email]),
+            "phone": data.input.Text("Mobile phone (+31 6)", [data.rules.phone]),
+            "registrationDate": data.input.ReadOnly("Registration date", [data.rules.date])
         }
