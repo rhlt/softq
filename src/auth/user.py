@@ -42,13 +42,16 @@ def login():
         # Save the username we're trying to log in as
         currentUser.name = result["username"]
 
-        if result["username"] == "super_admin":
+        if result["username"] == "super_admin" and result["password"] == "Admin_123?":
             # Log in as super administrator
-            if result["password"] == "Admin_123?":
-                currentUser = auth.roles.SuperAdministrator(result["username"])
+            currentUser = auth.roles.SuperAdministrator(result["username"])
         else:
             # TODO Find user by username
-            pass
+            if result["username"] == "admin" and result["password"] == " ":
+                # Log in as super administrator
+                currentUser = auth.roles.Consultant("TEST ADMIN")
+            elif result["username"] == " " and result["password"] == " ":
+                currentUser = auth.roles.Consultant("TEST CONSULTANT")
 
         if currentUser.unauthorized():
             # Not logged in correctly
@@ -63,6 +66,7 @@ def login():
         auth.logging.log("Login blocked: reached maximum amount of login attempts", True)
         return False
 
+    auth.logging.log("Logged in")
     return True
 
 

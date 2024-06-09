@@ -10,11 +10,13 @@ class Form:
     def run(self):
         """Ask the user to fill out the form; the result is guaranteed to be a validated, completely filled model (with the possible exception of ReadOnly fields, which may have None value), or None)"""
         valid = True
+        self.errors = {}
         result = {}
         for field in self.fields:
             # Run all inputs
             value = self.fields[field].run()
             if value == None and not isinstance(self.fields[field], data.fields.ReadOnly):
+                self.errors[field] = self.fields[field].errors
                 valid = False
                 break
             result[field] = value
@@ -22,29 +24,33 @@ class Form:
     
     def validate(self, model):
         """Validate a model (dict) to be valid for this form (also checks for any None values)"""
+        self.model = None
+        self.errors = {}
         if not isinstance(model, dict):
             # Not a dictionary
             return False
         for field in self.fields:
             if field not in model:
+                self.errors[field] = ["Field data is missing"]
                 # Model is missing field
                 return False
         for field in model:
             if field not in self.fields:
                 # Model contains unknown field
+                self.errors[field] = ["Unknown field"]
                 return False
             if not self.fields[field].validate(model[field], False, False):
                 # Model value not valid
+                self.errors[field] = self.fields[field].errors
                 return False
+        self.model = model
         return True
 
 
 class Login(Form):
-    """Create a login form with username and password"""
+    """Login form with username and password"""
 
     def __init__(self):
-        """Define username and password fields"""
-        
         self.fields = {
             "username": data.fields.Text("Username"),
             "password": data.fields.Text("Password"),
@@ -115,4 +121,16 @@ class Member(Form):
             "email": data.fields.Text("E-mail address", [data.rules.email]),
             "phone": data.fields.Text("Mobile phone (+31 6)", [data.rules.phone]),
             "registrationDate": data.fields.ReadOnly("Registration date", [data.rules.date])
+        }
+
+
+class Log(Form):
+    """Log form with timestamp, username"""
+
+    def __init__(self):
+        self.fields = {
+            "timestamp": data.fields.Text("Timestamp"),
+            "message": data.fields.Text("Message"),
+            "username": data.fields.Text("Username", None, True),
+            "suspicious": data.fields.FromList("Suspicious", ["YES", ""]),
         }

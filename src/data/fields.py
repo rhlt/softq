@@ -8,6 +8,7 @@ class Text:
     def __init__(self, name, rules = None, allow_empty = False):
         """Initialize values and set defaults"""
         self.name = str(name)
+        self.errors = []
         # Never allow values longer than 100 characters or that contain control characters (ASCII < 32), including newline and NULL bytes
         self.rules = [data.rules.notTooLong(self.name), data.rules.noControlCharacters(self.name)]
         if not allow_empty:
@@ -27,6 +28,7 @@ class Text:
             if not rule[1](value):
                 if show_error:
                     print(" :: " + rule[0])
+                self.errors.append(rule[0])
                 valid = False
         return valid
 

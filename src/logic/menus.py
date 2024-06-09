@@ -18,4 +18,4 @@ main = Menu("Welcome to the Member Management System", [
     #MenuOption("Delete member", lambda: None),
     MenuOption("Backup or Restore", lambda: None),
     MenuOption("Log out (quit program)", lambda: True),
-], "consult")
+])

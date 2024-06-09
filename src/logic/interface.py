@@ -6,10 +6,9 @@ import auth.user
 class Menu:
     """Base menu class that displays a menu of options and asks the user to input a number to choose a menu option"""
 
-    def __init__(self, title, options, access):
+    def __init__(self, title, options):
         self.title = title
         self.options = options
-        self.access = access
 
     def run(self):
 
@@ -17,10 +16,9 @@ class Menu:
         print(self.title)
         print("*" * len(self.title))
 
-        if not auth.user.check_access(self.access, f"Access to {self.__class__.__name__} was refused"):
-            # No access to this part of the system
-            return None
-        
+        if not auth.user.logged_in():
+            auth.user.login()
+            
         print(f"Please enter an option (1-{len(self.options)}):")
         i = 1
         option_numbers = [""]

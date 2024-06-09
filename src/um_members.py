@@ -2,34 +2,31 @@
 Assignment for Analysis 8, Software Quality (INFSWQ21-A)
 Name: Ruben Holthuijsen
 Student number: 1064459
+
+Requires 'cryptography' package (run "pip install cryptography")
 """
 
+import auth.logging
+import storage.encryption
+import logic.menus
+
+
+storage.encryption.initialize_key()
+import storage.files
+test = storage.files.Logs()
+test.insert({ "timestamp": "a", "message": "b", "username": "", "suspicious": "" })
+
+
 if __name__ == '__main__':
-    import logic.menus
-    logic.menus.main.run()
+    
+    try:
+        # Generate encryption key
+        if storage.encryption.initialize_key():
+            auth.logging.log("Generated new encryption key") # Should be done only once
+        
+        # Run the main logic
+        logic.menus.main.run()
 
-# TODO: authorization (user password/role check) storage (database + file), logging, ...
-
-
-# login = data.forms.Login()
-# result = login.run()
-# print(result)
-
-
-# user = data.forms.User()
-# result = user.run()
-# print(result)
-
-
-# member = data.forms.Member()
-# result = member.run()
-# print(result)
-
-# data.input.Text("ID", [data.rules.tenDigits, data.rules.twoDigitYear, data.rules.checksum]).run()
-# data.input.Text("Date", [data.rules.date]).run()
-
-# number = data.input.Number("Enter a number: ").run()
-# print("Received number +1:", number + 1)
-
-# city = data.input.FromList("Enter a city: ", ["Amsterdam", "Rotterdam", "Den Haag", "Utrecht", "Eindhoven", "Groningen", "Leiden", "Delft", "Dordrecht", "Gouda"]).run()
-# print("Received city:", city)
+    except Exception as e:
+        # Log any exceptions that may occur
+        auth.logging.log("Exception: " + str(e), True)
