@@ -21,7 +21,7 @@ class Form:
         return result if valid else None
     
     def validate(self, model):
-        """Validate a model (dict) to be valid for this form"""
+        """Validate a model (dict) to be valid for this form (also checks for any None values)"""
         if not isinstance(model, dict):
             # Not a dictionary
             return False
@@ -50,6 +50,27 @@ class Login(Form):
             "username": data.input.Text("Username"),
             "password": data.input.Text("Password"),
         }
+
+
+class ChangePassword(Form):
+    """Change password form"""
+    
+    def __init__(self):
+        """Define current and new password fields fields"""
+    
+        self.fields = {
+            "currentPassword": data.input.Text("Current password"),
+            "newPassword": data.input.Text("New password", [
+                data.rules.atLeastThisLong(12),
+                data.rules.noLongerThan(30),
+                data.rules.containsLowercase,
+                data.rules.containsUppercase,
+                data.rules.containsDigit,
+                data.rules.containsSpecial,
+            ]),
+        }
+    
+
 
 
 class User(Form):

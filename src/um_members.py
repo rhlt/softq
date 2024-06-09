@@ -2,6 +2,8 @@ import data.forms
 import data.input
 import data.rules
 
+import interface.menu
+
 # TODO: interface (controllers), storage (database + file), logging, ...
 
 
@@ -19,8 +21,10 @@ import data.rules
 # result = member.run()
 # print(result)
 
-data.input.Text("ID", [data.rules.tenDigits, data.rules.twoDigitYear, data.rules.checksum]).run()
-data.input.Text("Date", [data.rules.date]).run()
+interface.menu.main.run()
+
+# data.input.Text("ID", [data.rules.tenDigits, data.rules.twoDigitYear, data.rules.checksum]).run()
+# data.input.Text("Date", [data.rules.date]).run()
 
 # number = data.input.Number("Enter a number: ").run()
 # print("Received number +1:", number + 1)
