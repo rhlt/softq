@@ -1,7 +1,7 @@
 # Logic to change member profiles
 
 import data.forms
-import authorization.user
+import auth.user
 
 def add_member():
     # Let user change password

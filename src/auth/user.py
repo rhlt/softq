@@ -1,12 +1,12 @@
 # Authorization classes
 
-import authorization.logging
-import authorization.roles
+import auth.logging
+import auth.roles
 import data.forms
 
 currentUser = None
 try:
-    maxAttempts = int(open(r".login-attempts", "r").read())
+    maxAttempts = int(open(r"./output/.login-attempts", "r").read())
 except:
     maxAttempts = 5
 
@@ -27,7 +27,7 @@ def login():
         return False
     
     # Mark current user as unauthorized (will ask for login)
-    currentUser = authorization.roles.Unauthorized(None)
+    currentUser = auth.roles.Unauthorized(None)
     
     while currentUser.unauthorized() and maxAttempts > 0:
         # Ask for login details until user is no longer unauthorized
@@ -45,7 +45,7 @@ def login():
         if result["username"] == "super_admin":
             # Log in as super administrator
             if result["password"] == "Admin_123?":
-                currentUser = authorization.roles.SuperAdministrator(result["username"])
+                currentUser = auth.roles.SuperAdministrator(result["username"])
         else:
             # TODO Find user by username
             pass
@@ -53,14 +53,14 @@ def login():
         if currentUser.unauthorized():
             # Not logged in correctly
             print(" :: The username or password is incorrect")
-            authorization.logging.log("Incorrect login")
+            auth.logging.log("Incorrect login")
             maxAttempts -= 1
-            open(r"./storage/.login-attempts", "w").write(str(maxAttempts))
+            open(r"./output/.login-attempts", "w").write(str(maxAttempts))
         
     if maxAttempts <= 0:
         # Too many failed logins
         print("You have reached the maximum amount of login attempts.")
-        authorization.logging.log("Login blocked: reached maximum amount of login attempts", True)
+        auth.logging.log("Login blocked: reached maximum amount of login attempts", True)
         return False
 
     return True
@@ -78,7 +78,7 @@ def check_access(role, report, suspicious = False):
         print("You are now logged in as " + currentUser.name)
 
     if not currentUser.can(role):
-        authorization.logging.log(report, suspicious)
+        auth.logging.log(report, suspicious)
         print("You are not allowed to perform this action. This incident will be reported.")
         return False
 

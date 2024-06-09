@@ -1,7 +1,7 @@
 # Logic to display interfaces
 
 import data.fields
-import authorization.user
+import auth.user
 
 class Menu:
     """Base menu class that displays a menu of options and asks the user to input a number to choose a menu option"""
@@ -17,7 +17,7 @@ class Menu:
         print(self.title)
         print("*" * len(self.title))
 
-        if not authorization.user.check_access(self.access, f"Access to {self.__class__.__name__} was refused"):
+        if not auth.user.check_access(self.access, f"Access to {self.__class__.__name__} was refused"):
             # No access to this part of the system
             return None
         
