@@ -50,7 +50,7 @@ def login():
             # TODO Find user by username
             if result["username"] == "admin" and result["password"] == " ":
                 # Log in as super administrator
-                currentUser = auth.roles.Consultant("TEST ADMIN")
+                currentUser = auth.roles.Administrator("TEST ADMIN")
             elif result["username"] == " " and result["password"] == " ":
                 currentUser = auth.roles.Consultant("TEST CONSULTANT")
 
@@ -80,6 +80,7 @@ def login():
 
 def hasAccess(role):
     """Check if current user has access to role"""
+    global currentUser
 
     if currentUser is None:
         return False

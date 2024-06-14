@@ -11,6 +11,7 @@ notEmpty = lambda name: (f"{name} should not be empty", lambda s: isinstance(s, 
 mustBeEmpty = lambda name: (f"{name} must be empty", lambda s: isinstance(s, str) and len(s) == 0) # For "Press enter to continue" displays
 digitsOnly = lambda name: (f"{name} should only contain the digits 0-9", lambda s: re.search(r"^\d*$", s))
 valueInList = lambda values: lambda name: (f"{name} should be one of the following: " + ", ".join(filter(lambda v: len(v) > 0, values)), lambda s: s.upper() in map(lambda v: str(v).upper(), values))
+duplicateValue = lambda value: lambda name: (f"Duplicate {name}: '{value}' already exists", lambda _: False) # This rule is dynamically added if the value was already found and therefore always returns False for "invalid"
 
 # Username/Password rules
 atLeastThisLong = lambda length: lambda name: (f"{name} should have at least {length} characters", lambda s: isinstance(s, str) and len(s) >= length)

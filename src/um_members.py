@@ -12,9 +12,9 @@ import logic.menus
 
 
 storage.encryption.initializeKey()
-import storage.files
-test = storage.files.Logs()
-test.insert({ "timestamp": "a", "message": "b", "username": "", "suspicious": "" })
+import storage.repositories
+test = storage.repositories.Logs()
+print(test.readAll())# { "timestamp": "a", "message": "b", "username": "", "suspicious": "" })
 
 
 if __name__ == '__main__':

@@ -1,7 +1,6 @@
 # Logging functionality
 
 import datetime
-import data.fields
 import auth.user
 import json
 import storage.encryption

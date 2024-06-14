@@ -125,7 +125,7 @@ class Member(Form):
 
 
 class Log(Form):
-    """Log form with timestamp, username"""
+    """Log form with timestamp, username, message and whether it's suspicious"""
 
     def __init__(self):
         self.fields = {
