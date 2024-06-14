@@ -3,7 +3,7 @@
 import data.forms
 import auth.user
 
-def add_member():
+def addMember():
     # Let user change password
 
     print("Add new member (press Ctrl+C to cancel):")

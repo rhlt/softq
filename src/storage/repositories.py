@@ -44,7 +44,7 @@ class FileRepository(Repository):
     def insert(self, model):
         """Insert a new line into a file"""
 
-        if not auth.user.check_access(self.canInsert(), f"Unauthorized Insert call in {self.__class__.__name__}", True):
+        if not auth.user.requireAccess(self.canInsert(), f"Unauthorized Insert call in {self.__class__.__name__}", True):
             return False # User has no access (and that is suspicious)
         
         if not self.validate("insert", model):

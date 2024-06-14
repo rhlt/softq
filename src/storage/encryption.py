@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 
 encryptor = None
 
-def hash_data(data):
+def hashData(data):
     """Hash string data"""
 
     if isinstance(data, str):
@@ -16,7 +16,7 @@ def hash_data(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def hash_data_salt(data, saltlen = 8):
+def hashDataWithSalt(data, saltlen = 8):
     """Hash string data with a random salt"""
 
     if isinstance(data, str):
@@ -26,26 +26,26 @@ def hash_data_salt(data, saltlen = 8):
     salt = random.randbytes(saltlen)
 
     # Return both salt and hash
-    return salt.hex() + 'x' + hash_data(salt + data)
+    return salt.hex() + 'x' + hashData(salt + data)
 
 
-def check_data_hash(data, hash):
-    """Check if a hash is valid"""
+def checkDataHash(data, hash):
+    """Check if a hash is valid for this data"""
     
     if not isinstance(data, str) or not isinstance(hash, str):
         return None
     parts = hash.split("x")
     if len(parts) > 1:
-        salt = parts[0] # First part up to : is a salt
+        salt = parts[0] # First part up to "x" is the salt
         hash = "x".join(parts[1:]) # The rest is the hash
     else:
         salt = "" # There is no salt
     
     # Compare the hash with the expected hash
-    return hash_data(bytes.fromhex(salt) + data.encode("utf-8")) == hash
+    return hashData(bytes.fromhex(salt) + data.encode("utf-8")) == hash
     
 
-def initialize_key():
+def initializeKey():
     """Ensure an encryption key exists"""
     global encryptor
 

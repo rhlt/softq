@@ -3,7 +3,7 @@
 import data.forms
 import data.fields
 
-def change_password():
+def changePassword():
     # Let user change password
 
     print("Change your password (press Ctrl+C to cancel):")

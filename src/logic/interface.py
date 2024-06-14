@@ -16,21 +16,21 @@ class Menu:
         print(self.title)
         print("*" * len(self.title))
 
-        if not auth.user.logged_in():
+        if not auth.user.loggedIn():
             auth.user.login()
             
         print(f"Please enter an option (1-{len(self.options)}):")
         i = 1
-        option_numbers = [""]
+        optionNumbers = [""]
         for option in self.options:
             # TODO skip if not authorized
-            option_numbers.append(str(i))
+            optionNumbers.append(str(i))
             print(f"  {i}. {option.title}")
             i += 1
         
         # Receive user input
-        option_input = data.fields.FromList("Option", option_numbers)
-        choice = option_input.run()
+        optionField = data.fields.FromList("Option", optionNumbers)
+        choice = optionField.run()
         if choice is None:
             return
         
@@ -40,15 +40,15 @@ class Menu:
             # Run the chosen action
             cancel = self.options[int(choice) - 1].action()
         else:
-            cancel = self.no_input()
+            cancel = self.noInput()
         if cancel:
             return
 
         while choice is not None:
             choice = self.run() # Keep running the menu until canceled with Ctrl+C
 
-    def no_input(self):
-        """What happens when the user presses enter without any input"""
+    def noInput(self):
+        """What happens when the user presses enter without any input: if this returns True, the menu is canceled, if False the menu is run again"""
         pass
 
 

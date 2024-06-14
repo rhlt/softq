@@ -5,28 +5,28 @@ import data.rules
 class Text:
     """Handle a validated text (string) value"""
 
-    def __init__(self, name, rules = None, allow_empty = False):
+    def __init__(self, name, rules = None, allowEmpty = False):
         """Initialize values and set defaults"""
         self.name = str(name)
         self.errors = []
         # Never allow values longer than 100 characters or that contain control characters (ASCII < 32), including newline and NULL bytes
         self.rules = [data.rules.notTooLong(self.name), data.rules.noControlCharacters(self.name)]
-        if not allow_empty:
+        if not allowEmpty:
             # Add the rule that input must not be empty
             self.rules.append(data.rules.notEmpty(self.name))
         if isinstance(rules, list):
             self.rules += map(lambda rule: rule(self.name), rules)
             
-    def validate(self, value, allow_none = False, show_error = True):
+    def validate(self, value, allowNone = False, showError = True):
         """Validate the response and print/log any rules that are violated"""
         valid = True
         if value is None:
-            return allow_none
+            return allowNone
         if not isinstance(value, str):
             return False
         for rule in self.rules:
             if not rule[1](value):
-                if show_error:
+                if showError:
                     print(" :: " + rule[0])
                 self.errors.append(rule[0])
                 valid = False
@@ -49,9 +49,9 @@ class Text:
 class Number(Text):
     """Handle a validated number (positive integer) value"""
 
-    def __init__(self, name, rules = None, allow_empty = False):
+    def __init__(self, name, rules = None, allowEmpty = False):
         """Initialize number input based on text input"""
-        super().__init__(name, rules, allow_empty)
+        super().__init__(name, rules, allowEmpty)
         # Add rule that input must only contain digits
         self.rules.append(data.rules.digitsOnly(self.name))
 
@@ -64,22 +64,22 @@ class Number(Text):
             return ""
         return int(value)
     
-    def validate(self, value, allow_none = False, show_error = True):
+    def validate(self, value, allowNone = False, showError = True):
         """Custom validation for number (positive integer) to ensure it is int and not str"""
-        return super().validate(None if str is None else str(value), allow_none, show_error)
+        return super().validate(None if str is None else str(value), allowNone, showError)
     
     
 class FromList(Text):
     """Handle a text (string) value that must be one of a specified list of values"""
 
-    def __init__(self, name, allowed_values = []):
+    def __init__(self, name, allowedValues = []):
         """Initialize input with custom rule to check if value is in the list of allowed values"""
-        if not isinstance(allowed_values, list) or len(allowed_values) == 0:
-            # If allowed_values is empty or invalid, make sure to allow value to be empty
-            allowed_values = [""]
-        super().__init__(name, [], "" in allowed_values)
+        if not isinstance(allowedValues, list) or len(allowedValues) == 0:
+            # If allowedValues is empty or invalid, make sure to allow value to be empty
+            allowedValues = [""]
+        super().__init__(name, [], "" in allowedValues)
         # Create custom rule for the list of allowed values
-        self.rules.append(data.rules.valueInList(allowed_values)(self.name))
+        self.rules.append(data.rules.valueInList(allowedValues)(self.name))
 
 
 class ReadOnly(Text):

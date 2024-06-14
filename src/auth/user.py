@@ -1,5 +1,6 @@
 # Authorization classes
 
+import os
 import auth.logging
 import auth.roles
 import data.forms
@@ -14,7 +15,7 @@ def name():
     """Get the current user name"""
     return currentUser.name if currentUser is not None else None
 
-def logged_in():
+def loggedIn():
     """Return if user is correctly logged in"""
     return currentUser is not None and not currentUser.unauthorized()
 
@@ -22,7 +23,7 @@ def login():
     """Let a user enter their username and password to log in"""
     global currentUser, maxAttempts
     
-    if logged_in():
+    if loggedIn():
         # Already logged in
         return False
     
@@ -66,23 +67,41 @@ def login():
         auth.logging.log("Login blocked: reached maximum amount of login attempts", True)
         return False
 
+
     auth.logging.log("Logged in")
+    try:
+        # Reset login attempts
+        os.remove(r"./output/.login-attempts")
+    except:
+        # Not a problem if file does not exist because there have been no incorrect login attempts
+        pass
     return True
 
 
-def check_access(role, report, suspicious = False):
+def hasAccess(role):
     """Check if current user has access to role"""
+
+    if currentUser is None:
+        return False
+    if currentUser.unauthorized():
+        return False
+    
+    return currentUser.can(role)    
+
+
+def requireAccess(role, reportMessage, suspicious = False):
+    """Check if current user has access to role, allow them to log in if they aren't yet, and report them if they are unauthorized"""
     global currentUser
     
     if not login():
-        # Canceled login
+        # Login was canceled
         return False
 
     if not currentUser.unauthorized():
-        print("You are now logged in as " + currentUser.name)
+        print("You are logged in as " + currentUser.name)
 
-    if not currentUser.can(role):
-        auth.logging.log(report, suspicious)
+    if not hasAccess(role):
+        auth.logging.log(reportMessage, suspicious)
         print("You are not allowed to perform this action. This incident will be reported.")
         return False
 
