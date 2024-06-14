@@ -3,38 +3,56 @@
 import validation.fields
 import authentication.user
 
+class MenuOption:
+    """Simple class that represents a menu option"""
+
+    def __init__(self, title, action, role = None):
+        self.title = title
+        self.action = action # action (lambda) to be executed when this menu option is chosen
+        self.role = role # required role to see the menu item (None = anyone)
+
+
 class Menu:
     """Menu class that displays a menu of options and asks the user to input a number to choose a menu option"""
 
-    def __init__(self, title, options):
+    def __init__(self, title, options, extraAction = None):
         self.title = title
         self.options = options
         self.description = f"Please enter an option (1-{len(self.options)}):"
         self.fieldName = "Option"
+        self.extraAction = extraAction
 
 
     def run(self):
+        """Show the menu"""
         print() # newline
         print(self.title)
         print("*" * len(self.title))
 
         if not authentication.user.loggedIn():
             authentication.user.login()
+
+        if self.extraAction is not None:
+            self.extraAction()
             
         print(self.description)
+
         if isinstance(self.options, list):
             self.options = dict(zip([str(n) for n in range(1, len(self.options) + 1)], self.options)) # List to dictionary with numbered keys ("1", "2", "3", ...)
-        optionsAvailable = False
+        optionsAvailable = []
+        optionLength = 0
         for option in self.options:
             if self.options[option].role is not None and not authentication.user.hasAccess(self.options[option].role):
                 # Only show menu items the user is supposed to see
                 continue
-            optionsAvailable = True
-            print(f"  {option}: {self.options[option].title}")
+            optionLength = len(option) if optionLength < len(option) else optionLength
+            optionsAvailable.append(option)
 
-        if optionsAvailable:
+        if len(optionsAvailable) > 0:
             # Generate a field from the list of options
-            optionField = validation.fields.FromList(self.fieldName, list(self.options) + [""])
+            optionField = validation.fields.FromList(self.fieldName, optionsAvailable + [""])
+            for option in optionsAvailable:
+                print(f"  {option.ljust(optionLength)}: {self.options[option].title}")
         else:
             # There are no options, or none are accessible to the current user
             optionField = validation.fields.EmptyValue("There is no data to be shown")
@@ -67,18 +85,24 @@ class RepositoryMenu(Menu):
 
     def __init__(self, title, repository):
         """Initialize by generating menu option from repository items"""
-        self.offset = 0
-        self.limit = 20
         self.repository = repository
         self.title = title
         self.fieldLabel = "Line number" if repository.idField is None else repository.idField
         self.fieldName = f"{self.fieldLabel} (leave empty to show next page)"
         self.description = ""
+        self.offset = 0
+        self.limit = 20
+        self.extraAction = None
+
+
+    def run(self):
+        """Load the options and show the menu"""
         self.generateOptions()
+        super().run()
 
 
     def generateOptions(self):
-        """Generate items"""
+        """Generate menu options for items"""
         items = self.repository.readAll(self.offset, self.limit)
         if items is None or len(items) == 0:
             self.options = {}
@@ -91,8 +115,7 @@ class RepositoryMenu(Menu):
     
     def viewItem(self, id):
         """View the item that was selected"""
-        item = self.repository.readOne(id)
-        self.repository.form.display(item)
+        RepositoryItem(f"{self.repository.form.name}: {id}", self.repository, id).run()
 
 
     def noInput(self):
@@ -101,17 +124,54 @@ class RepositoryMenu(Menu):
             self.offset += self.limit
         else:
             if self.offset == 0:
-                return True # Prevent getting "stuck" in screen that is completely empty
+                return True # Prevent getting "stuck" in a screen that is completely empty
             self.offset = 0
         self.generateOptions()
         return False
+    
 
+class RepositoryItem(Menu):
+    """Class that shows an item in the repository and allows the user to select an action"""
 
-
-class MenuOption:
-    """Menu option class"""
-
-    def __init__(self, title, action, role = None):
+    def __init__(self, title, repository, id):
+        """Initialize by generating menu option from repository items"""
+        self.id = id
+        self.item = None
+        self.repository = repository
+        self.label = self.repository.form.name
         self.title = title
-        self.action = action
-        self.role = role # required role to see the menu item (None = anyone)
+        self.description = f"Please select an action to perform or press Ctrl+C to cancel"
+        self.fieldName = "Action"
+        self.extraAction = lambda: self.repository.form.display(self.item)
+
+    
+    def updateItem(self):
+        """Helper function to update an item"""
+        model = self.repository.form.run(self.item)
+        self.repository.update(self.id, model)
+
+
+    def deleteItem(self):
+        """Helper function to delete an item"""
+        result = validation.fields.Text(f"Are you sure you want to delete {self.label} {self.id}? (Y/N)", [validation.rules.valueInList(["Y", "N"])]).run()
+        if result.upper() == "Y":
+            self.repository.delete(self.id)
+
+
+    def generateOptions(self):
+        """Generate menu options for the item"""
+        self.item = self.repository.readOne(self.id)
+        if self.item is None:
+            self.options = {}
+            return
+        self.options = [
+            MenuOption(f"Return to {self.label} list", lambda: True),
+            MenuOption(f"Edit {self.label} {self.id}", self.updateItem, self.repository.canUpdate(self.id)),
+            MenuOption(f"Delete {self.label} {self.id}", lambda: self.deleteItem, self.repository.canDelete(self.id)),
+        ]
+
+    
+    def run(self):
+        """Run the menu and display the item"""
+        self.generateOptions()
+        super().run()

@@ -98,9 +98,6 @@ def requireAccess(role, reportMessage, suspicious = False):
         # Login was canceled
         return False
 
-    if not currentUser.unauthorized():
-        print("You are logged in as " + currentUser.name)
-
     if not hasAccess(role):
         authentication.logging.log(reportMessage, suspicious)
         print("You are not allowed to perform this action. This incident will be reported.")

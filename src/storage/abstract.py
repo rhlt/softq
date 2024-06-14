@@ -104,6 +104,9 @@ class Repository:
     def insert(self, model):
         """Insert a data model as a new item"""
 
+        if model is None:
+            return False # No model given
+
         if not authentication.user.requireAccess(self.canInsert(), f"Unauthorized Insert call in {self.name}", True):
             return False # User has no access (and that is suspicious)
         
@@ -133,6 +136,9 @@ class Repository:
     def update(self, id, model):
         """Update the specified id with a new data model (unspecified fields will be unchanged)"""
 
+        if model is None:
+            return False # No model given
+        
         if not authentication.user.requireAccess(self.canUpdate(id), f"Unauthorized Update call in {self.name} (id: {id})", True):
             return False # User has no access (and that is suspicious)
 
@@ -161,7 +167,7 @@ class Repository:
             # Form model is not valid (errors have been logged during validation)
             return False
         
-        return self._replace(model)
+        return self._replace(id, model)
     
     
     def delete(self, id):
@@ -192,7 +198,7 @@ class FileRepository(Repository):
         """List all items in the repository (from offset X with a limit of Y)"""
         
         try:
-            if not os.path.exists(file):
+            if not os.path.exists(self.path):
                 # There is nothing to read
                 return {}
             with open(self.path, "r") as file:
@@ -225,7 +231,7 @@ class FileRepository(Repository):
         """Get one item in the repository (by id)"""
     
         try:
-            if not os.path.exists(file):
+            if not os.path.exists(self.path):
                 # There is nothing to read
                 return {}
             with open(self.path, "r") as file:
@@ -242,7 +248,7 @@ class FileRepository(Repository):
                 if self.idField is None:
                     # We've found it (by line number)
                     return model
-                elif self.idField in model and model[self.idField] == id:
+                elif self.idField in model and str(model[self.idField]).upper() == str(id).upper():
                     # We've found it (by ID field)
                     return model
                 elif self.idField is not None:
@@ -275,7 +281,7 @@ class FileRepository(Repository):
         """Replace/update a line in the file (by id)"""
     
         try:
-            if not os.path.exists(file):
+            if not os.path.exists(self.path):
                 # There is nothing to read
                 return {}
             with open(self.path, "r") as file:

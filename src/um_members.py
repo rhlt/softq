@@ -11,13 +11,13 @@ import storage.encryption
 import logic.menus
 
 
-# TESTING
-import storage.repositories
-storage.encryption.initializeKey()
-logic.menus.repository("TEST LOGS REPOSITORY", storage.repositories.Logs()).run()
-# END TESTING
+# # TESTING
+# import storage.repositories
+# storage.encryption.initializeKey()
+# logic.menus.repositoryMenu("TEST LOGS REPOSITORY", storage.repositories.Logs()).run()
+# # END TESTING
 
-if __name__ == '__main__0':
+if __name__ == '__main__':
     
     try:
         # Generate encryption key

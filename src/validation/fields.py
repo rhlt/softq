@@ -34,14 +34,17 @@ class Text:
         return valid
 
 
-    def run(self):
+    def run(self, default = None):
         """Ask the user and validate the response (the response is guaranteed to be valid, or None)"""
         try:
-            value = input("> " + self.name + (" <" if isinstance(self, EmptyValue) else ": "))
+            value = input("> " + self.name + (f" ({default})" if default else "") + (" <" if isinstance(self, EmptyValue) else ": "))
         except:
             # Most likly because user pressed Ctrl+C
             print() # newline
             return None
+        if default is not None and value == "":
+            # Return default value if empty
+            return default
         if not self.validate(value, True):
             # Run again if validation fails
             return self.run()

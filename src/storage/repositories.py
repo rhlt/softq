@@ -11,3 +11,13 @@ class Logs(storage.abstract.FileRepository):
     
     def canRead(self, id):
         return "admin" # Overwrite 'read' access role
+    
+    # FOR TESTING
+    def canUpdate(self, id):
+        return "admin"
+    def canDelete(self, id):
+        return "admin"
+    def canInsert(self):
+        return "admin"
+    def canChange(self, id, newValues):
+        return "admin" if "username" not in newValues else "none"
