@@ -1,14 +1,14 @@
 # Logic to change member profiles
 
-import data.forms
-import auth.user
+import validation.forms
+import authentication.user
 
 def addMember():
     # Let user change password
 
     print("Add new member (press Ctrl+C to cancel):")
 
-    form = data.forms.Member()
+    form = validation.forms.Member()
     result = form.run()
     if result is None:
         return

@@ -2,7 +2,7 @@
 
 from functools import reduce 
 import re
-import data.datetime
+import validation.datetime
 
 # General/common rules
 notTooLong = lambda name: (f"{name} should not be longer than 100 characters", lambda s: isinstance(s, str) and len(s) <= 10000) # Always applied
@@ -25,11 +25,11 @@ containsSpecial = lambda name: (f"{name} should contain at least one special cha
 
 # Member ID rules
 tenDigits = lambda name: (f"{name} should be ten digits", lambda s: re.search(r"^\d{10}$", s))
-twoDigitYear = lambda name: (f"{name} should start with a two-digit year that is not in the future", lambda s: data.datetime.validShortYear(s[:2]))
+twoDigitYear = lambda name: (f"{name} should start with a two-digit year that is not in the future", lambda s: validation.datetime.validShortYear(s[:2]))
 checksum = lambda name: (f"{name} should have a valid checksum", lambda s: str(reduce(lambda check, digit: (check + ord(digit) - 8) % 10, s[:9], 0)) == s[9:])
 
 # Profile fields rules
-date = lambda name: (f"{name} should be a valid date (YYYY-MM-DD)", data.datetime.validDate)
+date = lambda name: (f"{name} should be a valid date (YYYY-MM-DD)", validation.datetime.validDate)
 age = lambda name: (f"{name} should be over 18", lambda s: re.search(r"^\d*$", s) and int(s) >= 18 and int(s) <= 122) # Oldest person ever was 122
 weight = lambda name: (f"{name} should be a realistic number", lambda s: re.search(r"^\d*$", s) and int(s) >= 30 and int(s) <= 600) # What would be realistic here?
 homeNumber = lambda name: (f"{name} should be a valid home number (number + possible suffix)", lambda s: re.search(r"^\d+[\s\-]?[a-zA-Z\d]*$", s))

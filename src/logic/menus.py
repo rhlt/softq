@@ -1,12 +1,12 @@
 # The main menu; the entry point into the application
 
-from logic.interface import Menu, MenuOption
+from logic.interface import Menu, RepositoryMenu, MenuOption
 import logic.users
 import logic.members
 
 # Main menu options
 main = Menu("Welcome to the Member Management System", [
-    MenuOption("Change your password", logic.users.changePassword),
+    MenuOption("Change your password", logic.users.changePassword, "password"),
     MenuOption("List users and roles", lambda: None),
     MenuOption("Create new user", lambda: None),
     #MenuOption("Modify user", lambda: None),
@@ -19,3 +19,6 @@ main = Menu("Welcome to the Member Management System", [
     MenuOption("Backup or Restore", lambda: None),
     MenuOption("Log out (quit program)", lambda: True),
 ])
+
+
+repository = lambda title, repository: RepositoryMenu(title, repository)

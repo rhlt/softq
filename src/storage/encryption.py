@@ -54,13 +54,15 @@ def initializeKey():
     
     try:
         # Try loading the key from a file
-        key = open("./output/.key", "rb").read()
+        with open("./output/.key", "rb") as file:
+            key = file.read()
         encryptor = Fernet(key)
         return False # Key already generated
     except:
         # If file does not exist or it is invalid, generate a new one
         key = Fernet.generate_key()
-        open("./output/.key", "wb").write(key)
+        with open("./output/.key", "wb") as file:
+            file.write(key)
         encryptor = Fernet(key)
         return True # Key was generated
 
@@ -70,7 +72,7 @@ def encrypt(data):
     global encryptor
     return data ### TESTING
     data = str(data)
-    return encryptor.encrypt(data.encode("utf-8")).decode("utf-8")
+    return encryptor.encrypt(validation.encode("utf-8")).decode("utf-8")
 
 
 def decrypt(data):
@@ -78,6 +80,6 @@ def decrypt(data):
     global encryptor
     return data ### TESTING
     try:
-        return encryptor.decrypt(data.encode("utf-8")).decode("utf-8")
+        return encryptor.decrypt(validation.encode("utf-8")).decode("utf-8")
     except:
         return None # Corrupted

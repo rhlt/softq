@@ -6,27 +6,27 @@ Student number: 1064459
 Requires 'cryptography' package (run "pip install cryptography")
 """
 
-import auth.logging
+import authentication.logging
 import storage.encryption
 import logic.menus
 
 
-storage.encryption.initializeKey()
+# TESTING
 import storage.repositories
-test = storage.repositories.Logs()
-print(test.readAll())# { "timestamp": "a", "message": "b", "username": "", "suspicious": "" })
+storage.encryption.initializeKey()
+logic.menus.repository("TEST LOGS REPOSITORY", storage.repositories.Logs()).run()
+# END TESTING
 
-
-if __name__ == '__main__':
+if __name__ == '__main__0':
     
     try:
         # Generate encryption key
         if storage.encryption.initializeKey():
-            auth.logging.log("Generated new encryption key") # Should be done only once
+            authentication.logging.log("Generated new encryption key") # Should be done only once
         
         # Run the main logic
         logic.menus.main.run()
 
     except Exception as e:
         # Log any exceptions that may occur
-        auth.logging.log("Exception: " + str(e), True)
+        authentication.logging.log("Exception: " + str(e), True)

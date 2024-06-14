@@ -1,7 +1,7 @@
 # Logging functionality
 
 import datetime
-import auth.user
+import authentication.user
 import json
 import storage.encryption
 
@@ -11,7 +11,7 @@ def log(message, suspicious = False):
     if not isinstance(message, str) or len(message) == 0:
         return # Nothing to log
 
-    username = auth.user.name()
+    username = authentication.user.name()
     timestamp = str(datetime.datetime.now())
 
     if len(message) > 10000:
@@ -29,5 +29,6 @@ def log(message, suspicious = False):
 
     print("LOG", logstring, data) ###########
     line = storage.encryption.encrypt(logstring) + "\n"
-    open("./output/.logs", "a").write(line)
+    with open("./output/.logs", "a") as file:
+        file.write(line)
     

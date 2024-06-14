@@ -21,15 +21,15 @@ class Consultant(Unauthorized):
     """Consultant class"""
 
     def can(self, role):
-        """Consultant can only 'consult'"""
-        return super().can(role) or role == "consult"
+        """Consultant can 'consult' and 'password' (=change their own password)"""
+        return super().can(role) or role == "consult" or role == "password"
 
 
 class Administrator(Consultant):
     """Administrator class"""
 
     def can(self, role):
-        """Administrator can 'admin' or 'consult'"""
+        """Administrator can 'admin', 'consult' or 'password'"""
         return super().can(role) or role == "admin"
 
 
@@ -37,5 +37,5 @@ class SuperAdministrator(Administrator):
     """Super Administrator class"""
 
     def can(self, role):
-        """Super Administrator can 'super', 'admin' or 'consult'"""
-        return super().can(role) or role == "super"
+        """Super Administrator can 'super', 'admin' or 'consult', but not 'password' (since it is hard-coded)"""
+        return role != "password" and super().can(role) or role == "super"

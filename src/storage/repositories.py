@@ -1,4 +1,4 @@
-import data.forms
+import validation.forms
 import storage.abstract
 
 
@@ -7,7 +7,7 @@ class Logs(storage.abstract.FileRepository):
 
     def __init__(self):
         super().__init__("./output/.logs")
-        self.form = data.forms.Log() # Log form with all fields
+        self.form = validation.forms.Log() # Log form with all fields
     
     def canRead(self, id):
         return "admin" # Overwrite 'read' access role
