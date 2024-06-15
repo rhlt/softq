@@ -3,6 +3,23 @@ import authentication.user
 import storage.abstract
 
 
+class Members(storage.abstract.FileRepository):
+    """Users repository class"""
+
+    def __init__(self):
+        super().__init__("./output/users")
+        self.form = validation.forms.User() # User form with all fields
+    
+    def canRead(self, id):
+        return "consult"
+    def canUpdate(self, id):
+        return "consult"
+    def canDelete(self, id):
+        return "admin" # Only admin can delete member
+    def canInsert(self):
+        return "consult"
+    
+
 class Users(storage.abstract.FileRepository):
     """Users repository class"""
 
@@ -18,8 +35,6 @@ class Users(storage.abstract.FileRepository):
         return "none" if authentication.user.name() == id else "admin" # No one can delete their own profile
     def canInsert(self):
         return "admin" # Only admin can create new users
-    def canChange(self, id, newValues):
-        return "admin" if "username" not in newValues else "none"
     
 
 class Logs(storage.abstract.FileRepository):

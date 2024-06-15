@@ -47,7 +47,7 @@ class Text:
             return default
         if not self.validate(value, True):
             # Run again if validation fails
-            return self.run()
+            return self.run(default)
         return value
     
 
@@ -86,9 +86,9 @@ class Number(Text):
         self.rules.append(validation.rules.digitsOnly(self.name))
 
 
-    def run(self):
+    def run(self, default = None):
         """Run the input and convert result to int (unless it is None or "", which is possible if allow empty is true)"""
-        value = super().run()
+        value = super().run(default)
         if value is None:
             return None
         if isinstance(value, str) and len(value) == 0:
@@ -122,9 +122,9 @@ class ReadOnly(Text):
         super().__init__(name, rules, True)
 
 
-    def run(self):
+    def run(self, default = None):
         """Value is not editable so no input should be asked"""
-        return None
+        return default
     
 
 class Hidden(ReadOnly):
@@ -135,9 +135,9 @@ class Hidden(ReadOnly):
         super().__init__(name, rules)
 
 
-    def run(self):
+    def run(self, default = None):
         """Value is not editable so no input should be asked"""
-        return
+        return default
     
     
     def display(self, _):
