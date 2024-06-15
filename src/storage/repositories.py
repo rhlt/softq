@@ -7,8 +7,9 @@ class Members(storage.abstract.FileRepository):
     """Users repository class"""
 
     def __init__(self):
-        super().__init__("./output/users")
-        self.form = validation.forms.User() # User form with all fields
+        super().__init__("./output/members")
+        self.form = validation.forms.Member() # User form with all fields
+        self.idField = "id"
     
     def canRead(self, id):
         return "consult"
@@ -26,6 +27,7 @@ class Users(storage.abstract.FileRepository):
     def __init__(self):
         super().__init__("./output/users")
         self.form = validation.forms.User() # User form with all fields
+        self.idField = "username"
     
     def canRead(self, id):
         return "consult" if authentication.user.name() == id else "admin" # Consultant can read their own profile
@@ -46,16 +48,6 @@ class Logs(storage.abstract.FileRepository):
     
     def canRead(self, id):
         return "admin" # Overwrite 'read' access role
-    
-    # FOR TESTING
-    def canUpdate(self, id):
-        return "admin"
-    def canDelete(self, id):
-        return "admin"
-    def canInsert(self):
-        return "admin"
-    def canChange(self, id, newValues):
-        return "admin" if "username" not in newValues else "none"
     
 
 class SuspiciousLogs(storage.abstract.FileRepository):

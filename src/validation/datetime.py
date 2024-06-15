@@ -3,10 +3,26 @@
 from datetime import datetime
 
 
+def date():
+    """Return today's date as string"""
+    return str(datetime.now().date())
+
+
+def time():
+    """Return the current time as string"""
+    return str(datetime.now().time()).split('.')[0] # No fractions of seconds
+
+
+def shortYear():
+    """Return the current two-digit year (24 for 2024)"""
+    return date()[2:4]
+
+
 def validDate(date):
     """Check if a date is valid in the format YYYY-mm-dd"""
     try:
         datetime.strptime(date, "%Y-%m-%d")
+        return True
     except ValueError:
         return False
 

@@ -1,9 +1,9 @@
 # Logging functionality
 
-import datetime
-import authentication.user
 import json
+import authentication.user
 import storage.encryption
+import validation.datetime
 
 def log(activity, details, suspicious = False):
     """Log a message"""
@@ -15,8 +15,8 @@ def log(activity, details, suspicious = False):
         details = "(no details available)"
 
     username = authentication.user.name()
-    date = str(datetime.datetime.now().date())
-    time = str(datetime.datetime.now().time()).split('.')[0] # No fractions of seconds
+    date = validation.datetime.date()
+    time = validation.datetime.time()
 
     # Restrict message length to prevent trouble when validating the log file contents
     activity = activity[:10000]

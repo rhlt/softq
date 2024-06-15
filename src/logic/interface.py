@@ -57,7 +57,7 @@ class Menu:
             print() # newline
         else:
             # There are no options, or none are accessible to the current user
-            optionField = validation.fields.EmptyValue("There is no data to be shown")
+            optionField = validation.fields.EmptyValue("Press enter to go back")
 
         # Receive user input
         choice = optionField.run()
@@ -89,7 +89,7 @@ class RepositoryMenu(Menu):
         """Initialize by generating menu option from repository items"""
         self.repository = repository
         self.title = title
-        self.fieldLabel = "Line number" if repository.idField is None else repository.idField
+        self.fieldLabel = "Line number" if repository.idField is None else repository.form.fields[repository.idField].name
         self.fieldName = f"{self.fieldLabel} (leave empty to show next page)"
         self.description = ""
         self.offset = 0
@@ -110,15 +110,16 @@ class RepositoryMenu(Menu):
         items = self.repository.readAll(self.offset, self.limit)
         if items is None or len(items) == 0:
             self.options = {}
-            self.description = "You've reached the end of the data. Press enter to view the first page or press Ctrl+C to cancel" if self.offset > 0 else ""
+            self.description = "You've reached the end of the data. Press enter to view the first page or press Ctrl+C to cancel" if self.offset > 0 else "There is nothing to display"
             return
 
 
         menuOptions = map(lambda id: MenuOption(self.repository.form.row(items[id]), lambda: self.viewItem(id), self.repository.canRead(id)), items)
         self.options = dict(zip([str(id) for id in items.keys()], menuOptions))
-        self.description = f"Showing items {self.offset+1}-{self.offset+self.limit}\nPlease enter a {self.fieldLabel} to view or press Ctrl+C to cancel"
-        padding = max(len(str(s)) for s in items.keys()) + 2
-        self.description += "\n\n" + self.repository.form.generateHeader(padding)
+        self.description = f"Showing items {self.offset+1}-{self.offset+self.limit}\nPlease type the {self.fieldLabel} to view or press Ctrl+C to cancel"
+        padding = max(len(str(s)) for s in items.keys())
+        idLabel = "  " + ("#" if self.repository.idField is None else self.fieldLabel).ljust(padding)[:padding]
+        self.description += "\n\n" + self.repository.form.generateHeader(idLabel)
 
     
     def viewItem(self, id):
@@ -156,22 +157,33 @@ class RepositoryItem(Menu):
     
     def updateItem(self):
         """Helper function to update an item"""
+        if self.item is None:
+            # Item does not exist (anymore)
+            validation.fields.EmptyValue(f"The {self.label} {self.id} does not exist").run()
+            return True # Close RepositoryItem
         print() # newline
         print(f"Edit {self.label} {self.id}")
         print("*" * len(f"Edit {self.label} {self.id}"))
         print("Please enter the updated values. Leave values empty to keep the originals:")
-        model = self.repository.form.run(self.item)
+        model = self.repository.form.run(self.item, [self.repository.idField])
         self.repository.update(self.id, model)
+        return False # Return to (updated) RepositoryItem
 
 
     def deleteItem(self):
         """Helper function to delete an item"""
+        if self.item is None:
+            # Item does not exist (anymore)
+            validation.fields.EmptyValue(f"The {self.label} {self.id} does not exist").run()
+            return True # Close RepositoryItem
         print() # newline
         print(f"Delete {self.label} {self.id}")
         print("*" * len(f"Delete {self.label} {self.id}"))
         result = validation.fields.Text(f"Are you sure you want to delete {self.label} {self.id}? (Y/N)", [validation.rules.valueInList(["Y", "N"])]).run()
         if result is not None and result.upper() == "Y":
-            self.repository.delete(self.id)
+            if self.repository.delete(self.id):
+                validation.fields.EmptyValue(f"{self.label} {self.id} was deleted").run()
+                return True # Close RepositoryItem
 
 
     def generateOptions(self):

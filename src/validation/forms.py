@@ -10,14 +10,18 @@ class Form:
         self.displayFields = None
 
 
-    def run(self, defaults = None):
-        """Ask the user to fill out the form; the result is guaranteed to be a validated model, or None; assuming defaults are valid)"""
+    def run(self, defaults = None, skipFields = None):
+        """Ask the user to fill out the form; the result is guaranteed to be a validated model, or None; assuming defaults and skipped fields are valid)"""
         valid = True
         self.errors = {}
         result = {}
         for field in self.fields:
-            # Run all inputs
+            # Run all inputs except those in skipFields
             default = defaults[field] if defaults is not None and field in defaults else None
+            if skipFields is not None and field in skipFields:
+                # This field should be skipped
+                result[field] = default
+                continue
             value = self.fields[field].run(default)
             if value == None and not isinstance(self.fields[field], validation.fields.ReadOnly):
                 self.errors[field] = self.fields[field].errors
@@ -55,6 +59,8 @@ class Form:
 
     def display(self, model):
         """Display all form fields and their values from a model (which must be validated and written to self.model)"""
+        if model is None:
+            return
         for field in self.fields:
             print(self.fields[field].display("" if field not in model else model[field]))
         print() # newline
@@ -66,15 +72,15 @@ class Form:
         return self.columns if hasattr(self, "columns") else dict(zip([field for field in self.fields], [15 for _ in self.fields]))
 
 
-    def generateHeader(self, padding = 0):
+    def generateHeader(self, firstCol = None):
         """Generate header for table display"""
 
         columns = self.getColumns()
         values = []
         separator = []
-        if padding > 0:
-            values = [padding * " "]
-            separator = [padding * "-"]
+        if firstCol is not None:
+            values = [firstCol]
+            separator = [len(firstCol) * "-"]
         for field in columns:
             value = self.fields[field].name
             maxWidth = columns[field]
@@ -151,12 +157,12 @@ class Member(Form):
     def __init__(self):
         self.name = "Member"
         self.fields = {
-            "id": validation.fields.ReadOnly("ID", [validation.rules.tenDigits, validation.rules.twoDigitYear, validation.rules.checksum]),
+            "id": validation.fields.Text("ID", [validation.rules.tenDigits, validation.rules.twoDigitYear, validation.rules.checksum]),
             "firstName": validation.fields.Text("First name"),
             "lastName": validation.fields.Text("Last name"),
-            "age": validation.fields.Number("Age"),
+            "age": validation.fields.Number("Age", [validation.rules.age, validation.rules.realisticAge]),
             "gender": validation.fields.FromList("Gender", ["M", "F", "X"]),
-            "weight": validation.fields.Number("Weight"),
+            "weight": validation.fields.Number("Weight", [validation.rules.weight]),
             "street": validation.fields.Text("Street"),
             "no": validation.fields.Text("Number", [validation.rules.homeNumber]),
             "zip": validation.fields.Text("ZIP (Postcode)", [validation.rules.postcode]),
@@ -164,6 +170,15 @@ class Member(Form):
             "email": validation.fields.Text("E-mail address", [validation.rules.email]),
             "phone": validation.fields.Text("Mobile phone (+31 6)", [validation.rules.phone]),
             "registrationDate": validation.fields.ReadOnly("Registration date", [validation.rules.date])
+        }
+        self.columns = {
+            "firstName": 12,
+            "lastName": 16,
+            "gender": 6,
+            "street": 20,
+            "zip": 6,
+            "city": 10,
+            "registrationDate": 12,
         }
 
 
@@ -184,6 +199,6 @@ class Log(Form):
             "date": 12,
             "time": 10,
             "username": 15,
-            "activity": 20,
+            "activity": 30,
             "suspicious": 10,
         }

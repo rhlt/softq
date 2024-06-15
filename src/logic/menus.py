@@ -4,6 +4,7 @@ from logic.interface import Menu, MenuOption, RepositoryMenu
 from logic.actions import createNewItem
 import authentication.user
 import storage.repositories
+import validation.datetime
 
 # Initialize the repositories
 membersRepository = storage.repositories.Members()
@@ -31,14 +32,15 @@ main = Menu("Welcome to the Member Management System", [
     # MenuOption("Change your password", logic.users.changePassword, "password"),
     # MenuOption("List users and roles", lambda: repositoryMenu("User overview", usersRepository).run(), usersRepository.canRead(None)),
     # MenuOption("Create a new user", lambda: repositoryInsert("Create a new user", usersRepository).run(), usersRepository.canInsert()),
+    MenuOption("Add new member", lambda: repositoryInsert("Add new member", membersRepository, { "registrationDate": validation.datetime.date() }), membersRepository.canInsert()),
+    MenuOption("View all members", lambda: repositoryMenu("View all members", membersRepository).run(), membersRepository.canRead(None)),
     MenuOption("Search members", lambda: repositoryMenu("Search members", membersRepository).run(), membersRepository.canRead(None)),
-    MenuOption("Add new member", lambda: repositoryInsert("Add new member", membersRepository), membersRepository.canInsert()),
     # MenuOption("Backup or Restore", lambda: None),
     MenuOption("View system logs", lambda: repositoryMenu("View system logs", logsRepository).run(), logsRepository.canRead(None)),
     MenuOption("View new suspicious logs", lambda: repositoryMenu("View new suspicious logs", suspiciousLogsRepository, True).run(), suspiciousLogsRepository.canRead(None)),
     MenuOption("Log out (quit program)", lambda: True),
 ], mainMenuAction)
 
-# Function to generate a repository menu interface
+# Lambdas to generate a repository menu interface
 repositoryMenu = lambda title, repository, deleteWhenViewed = False: RepositoryMenu(title, repository, deleteWhenViewed)
-repositoryInsert = lambda title, repository: createNewItem(title, repository)
+repositoryInsert = lambda title, repository, defaults = None: createNewItem(title, repository, defaults)

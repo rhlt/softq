@@ -79,7 +79,7 @@ def login():
         
     if maxAttempts <= 0:
         # Too many failed logins
-        print("You have reached the maximum number of login attempts.")
+        print("You have reached the maximum number of login attempts. (Delete the 'login-attempts' file in the output folder to bypass this)")
         authentication.logging.log("Login blocked", "Reached maximum allowed number of login attempts", True)
         return False
 

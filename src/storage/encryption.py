@@ -1,7 +1,8 @@
 # Helper functions for data encryption
 
-import random
 import hashlib
+import os
+import random
 from cryptography.fernet import Fernet
 
 encryptor = None
@@ -54,32 +55,40 @@ def initializeKeys():
     
     try:
         # Try loading the key from a file
+        if not os.path.isdir('./output'):
+            os.mkdir("./output")
         with open("./output/.key", "rb") as file:
             key = file.read()
         encryptor = Fernet(key)
         return False # Key already generated
     except:
         # If file does not exist or it is invalid, generate a new one
+        if not os.path.isdir('./output') or not os.access('./', os.R_OK) or not os.access('./', os.W_OK):
+            print("Please make sure the working directory and all required files and subfolders are accessible to the application")
+            exit()
+            # raise OSError("Failed to access or create the required files in the working directory")
         key = Fernet.generate_key()
         with open("./output/.key", "wb") as file:
             file.write(key)
         encryptor = Fernet(key)
         return True # Key was generated
+            
 
 
 def encrypt(data):
     """Symmetrically encrypt data"""
     global encryptor
-    return data ## TESTING
+    # return data ## FOR TESTING
     data = str(data)
-    return encryptor.encrypt(validation.encode("utf-8")).decode("utf-8")
+    return encryptor.encrypt(data.encode("utf-8")).decode("utf-8")
 
 
 def decrypt(data):
     """Symmetrically decrypt data"""
     global encryptor
-    return data ## TESTING
+    # return data ## FOR TESTING
     try:
-        return encryptor.decrypt(validation.encode("utf-8")).decode("utf-8")
-    except:
+        return encryptor.decrypt(data.encode("utf-8")).decode("utf-8")
+    except Exception as e:
+        print("## DECRYPT ERROR", str(e))
         return None # Corrupted
