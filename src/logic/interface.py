@@ -18,7 +18,7 @@ class Menu:
     def __init__(self, title, options, extraAction = None):
         self.title = title
         self.options = options
-        self.description = f"Please enter an option (1-{len(self.options)}):"
+        self.description = f"Please enter an option number:"
         self.fieldName = "Option"
         self.extraAction = extraAction
 
@@ -29,8 +29,8 @@ class Menu:
         print(self.title)
         print("*" * len(self.title))
 
-        if not authentication.user.loggedIn():
-            authentication.user.login()
+        if not authentication.user.loggedIn() and not authentication.user.login():
+            return # Not login and login was canceled
 
         if self.extraAction is not None:
             self.extraAction()
@@ -83,7 +83,7 @@ class Menu:
 class RepositoryMenu(Menu):
     """Class that lists items in the repository"""
 
-    def __init__(self, title, repository):
+    def __init__(self, title, repository, deleteWhenViewed = False):
         """Initialize by generating menu option from repository items"""
         self.repository = repository
         self.title = title
@@ -92,6 +92,7 @@ class RepositoryMenu(Menu):
         self.description = ""
         self.offset = 0
         self.limit = 20
+        self.deleteWhenViewed = deleteWhenViewed # Repositories that need to be deleted when viewed
         self.extraAction = None
 
 
@@ -115,7 +116,7 @@ class RepositoryMenu(Menu):
     
     def viewItem(self, id):
         """View the item that was selected"""
-        RepositoryItem(f"{self.repository.form.name}: {id}", self.repository, id).run()
+        RepositoryItem(f"{self.repository.form.name}: {id}", self.repository, id, self.deleteWhenViewed).run()
 
 
     def noInput(self):
@@ -126,14 +127,13 @@ class RepositoryMenu(Menu):
             if self.offset == 0:
                 return True # Prevent getting "stuck" in a screen that is completely empty
             self.offset = 0
-        self.generateOptions()
         return False
     
 
 class RepositoryItem(Menu):
     """Class that shows an item in the repository and allows the user to select an action"""
 
-    def __init__(self, title, repository, id):
+    def __init__(self, title, repository, id, deleteWhenViewed = False):
         """Initialize by generating menu option from repository items"""
         self.id = id
         self.item = None
@@ -142,19 +142,27 @@ class RepositoryItem(Menu):
         self.title = title
         self.description = f"Please select an action to perform or press Ctrl+C to cancel"
         self.fieldName = "Action"
+        self.deleteWhenViewed = deleteWhenViewed
         self.extraAction = lambda: self.repository.form.display(self.item)
 
     
     def updateItem(self):
         """Helper function to update an item"""
+        print() # newline
+        print(f"Edit {self.label} {self.id}")
+        print("*" * len(f"Edit {self.label} {self.id}"))
+        print("Please enter the updated values. Leave values empty to keep the originals:")
         model = self.repository.form.run(self.item)
         self.repository.update(self.id, model)
 
 
     def deleteItem(self):
         """Helper function to delete an item"""
+        print() # newline
+        print(f"Delete {self.label} {self.id}")
+        print("*" * len(f"Delete {self.label} {self.id}"))
         result = validation.fields.Text(f"Are you sure you want to delete {self.label} {self.id}? (Y/N)", [validation.rules.valueInList(["Y", "N"])]).run()
-        if result.upper() == "Y":
+        if result is not None and result.upper() == "Y":
             self.repository.delete(self.id)
 
 
@@ -164,11 +172,18 @@ class RepositoryItem(Menu):
         if self.item is None:
             self.options = {}
             return
-        self.options = [
-            MenuOption(f"Return to {self.label} list", lambda: True),
-            MenuOption(f"Edit {self.label} {self.id}", self.updateItem, self.repository.canUpdate(self.id)),
-            MenuOption(f"Delete {self.label} {self.id}", lambda: self.deleteItem, self.repository.canDelete(self.id)),
-        ]
+        if not self.deleteWhenViewed:
+            self.options = [
+                MenuOption(f"Return to {self.label} list", lambda: True),
+                MenuOption(f"Edit {self.label} {self.id}", self.updateItem, self.repository.canUpdate(self.id)),
+                MenuOption(f"Delete {self.label} {self.id}", self.deleteItem, self.repository.canDelete(self.id)),
+            ]
+        else:
+            self.options = [
+                MenuOption(f"Mark as viewed", lambda: self.repository.delete(self.id), self.repository.canDelete(self.id)),
+                MenuOption(f"Return without marking as viewed", lambda: True),
+            ]
+
 
     
     def run(self):

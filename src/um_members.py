@@ -10,23 +10,16 @@ import authentication.logging
 import storage.encryption
 import logic.menus
 
-
-# # TESTING
-# import storage.repositories
-# storage.encryption.initializeKey()
-# logic.menus.repositoryMenu("TEST LOGS REPOSITORY", storage.repositories.Logs()).run()
-# # END TESTING
-
 if __name__ == '__main__':
     
-    try:
+    #try:
         # Generate encryption key
-        if storage.encryption.initializeKey():
-            authentication.logging.log("Generated new encryption key") # Should be done only once
+        if storage.encryption.initializeKeys():
+            authentication.logging.log("Generate encryption keys", "This is done automatically if the keys do not exist yet") # Should be done only once
         
         # Run the main logic
         logic.menus.main.run()
 
-    except Exception as e:
+    #except Exception as e:
         # Log any exceptions that may occur
-        authentication.logging.log("Exception: " + str(e), True)
+    #    authentication.logging.log("Exception occured", str(e), True)

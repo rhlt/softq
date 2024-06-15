@@ -5,30 +5,38 @@ import authentication.user
 import json
 import storage.encryption
 
-def log(message, suspicious = False):
+def log(activity, details, suspicious = False):
     """Log a message"""
 
-    if not isinstance(message, str) or len(message) == 0:
+    if not isinstance(activity, str) or len(activity) == 0:
         return # Nothing to log
+    
+    if not isinstance(details, str) or len(details) == 0:
+        details = "(no details available)"
 
     username = authentication.user.name()
-    timestamp = str(datetime.datetime.now())
+    date = str(datetime.datetime.now().date())
+    time = str(datetime.datetime.now().time()).split('.')[0] # No fractions of seconds
 
-    if len(message) > 10000:
-        # Restrict message length to prevent trouble when validating the log file contents
-        message = message[:10000]
+    # Restrict message length to prevent trouble when validating the log file contents
+    activity = activity[:10000]
+    details = details[:10000]
 
     # Replace all ASCII control characters (including newlines and tabs) with a space to make the message valid
     controlChars = dict.fromkeys(range(32), " ")
-    message = message.translate(controlChars)
+    activity = activity.translate(controlChars)
+    details = details.translate(controlChars)
 
-    data = { "timestamp": timestamp, "message": message, "username": "" if username is None else username, "suspicious": "YES" if suspicious else "" }
+    data = { "date": date, "time": time, "activity": activity, "details": details, "username": "" if username is None else username, "suspicious": "Y" if suspicious else "N" }
 
     # Convert to string and create a field to validate it
     logstring = json.dumps(data)
 
-    print("LOG", logstring, data) ###########
+    print("## LOG", data)
     line = storage.encryption.encrypt(logstring) + "\n"
-    with open("./output/.logs", "a") as file:
+    with open("./output/logs", "a") as file:
         file.write(line)
+    if suspicious:
+        with open("./output/logs-suspicious", "a") as file:
+            file.write(line)
     

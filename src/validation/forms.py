@@ -36,7 +36,7 @@ class Form:
             return False
         for field in self.fields:
             if field not in model:
-                self.errors[field] = ["Field data is missing"]
+                self.errors[field] = ["Field is missing"]
                 # Model is missing field
                 return False
         for field in model:
@@ -133,8 +133,10 @@ class Log(Form):
     def __init__(self):
         self.name = "Log"
         self.fields = {
-            "timestamp": validation.fields.Text("Timestamp"),
-            "message": validation.fields.Text("Message"),
+            "date": validation.fields.Text("Date"),
+            "time": validation.fields.Text("Time"),
             "username": validation.fields.Text("Username", None, True),
-            "suspicious": validation.fields.FromList("Suspicious", ["YES", ""]),
+            "activity": validation.fields.Text("Message"),
+            "details": validation.fields.Text("Details"),
+            "suspicious": validation.fields.FromList("Suspicious", ["Y", "N"]),
         }

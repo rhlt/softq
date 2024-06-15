@@ -59,42 +59,50 @@ class Repository:
         """Validate form model and log all validation errors"""
 
         if self.idField is not None and self.idField not in model:
-            authentication.logging.log(f"Attempt to {action} invalid data in {self.name} (field: '{self.idField}'): Missing ID-field", True)
+            authentication.logging.log(f"{action} invalid data in {self.name}", f"Field '{self.idField}'): Missing ID-field", True)
             return False
         if self.form.validate(model):
             return True
-        for field in self.form.errors:
-            for error in self.form.errors[field]:
-                authentication.logging.log(f"Attempt to {action} invalid data in {self.name} (field: '{field}'): {error}", True)
+        for field in self.form.fields:
+            if field in self.form.errors:
+                for error in self.form.errors[field]:
+                    authentication.logging.log(f"{action} invalid data in {self.name}", f"Field '{field}': {error}", True)
+            elif self.form.fields[field] is None:
+                authentication.logging.log(f"{action} invalid data in {self.name}", f"Field '{field}': value is not set", True)
         return False
     
 
     def readAll(self, offset = 0, limit = 20):
         """Read all items up to {limit} starting from {offset}"""
 
-        if not authentication.user.requireAccess(self.canRead(None), f"Unauthorized ReadAll call in {self.name}", True):
+        if not authentication.user.requireAccess(self.canRead(None), f"Unauthorized read of all {self.name}", f"Offset: {offset}, Limit: {limit}", True):
             return None # User has no access
+        
+        authentication.logging.log(f"Read all {self.name}", f"Offset: {offset}, Limit: {limit}")
         
         items = self._list(offset, limit)
 
         # Return only validated items (errors will be logged by self.validate)
-        return { id: item for id, item in items.items() if self.validate("read invalid data", item) and self.canRead(id) }
+        return { id: item for id, item in items.items() if self.validate("read", item) and self.canRead(id) }
 
 
     def readOne(self, id):
         """Read one item by ID (what 'ID' means depends on the {idField} property)"""
 
-        if not authentication.user.requireAccess(self.canRead(id), f"Unauthorized ReadOne call in {self.name}", True):
+        fieldName = "Line number" if self.idField is None else self.idField
+
+        if not authentication.user.requireAccess(self.canRead(id), f"Unauthorized read from {self.name}", f"{fieldName}: {id}", True):
             return None # User has no access
+        
+        authentication.logging.log(f"Read from {self.name}", f"{fieldName}: {id}")
         
         item = self._one(id)
 
         if item is None:
-            fieldName = "item number" if self.idField is None else self.idField
-            authentication.logging.log(f"Error reading in {self.name}: there is no {fieldName} '{id}'")
+            authentication.logging.log(f"Error reading in {self.name}", f"There is no {fieldName}: {id}")
             return None
         
-        if not self.validate("read invalid data", item):
+        if not self.validate("read", item):
             # This item is invalid (errors have been logged by self.validate)
             return None
         
@@ -107,11 +115,13 @@ class Repository:
         if model is None:
             return False # No model given
 
-        if not authentication.user.requireAccess(self.canInsert(), f"Unauthorized Insert call in {self.name}", True):
-            return False # User has no access (and that is suspicious)
+        if not authentication.user.requireAccess(self.canInsert(), f"Unauthorized insert in {self.name}", f"Data: {str(model)}", True):
+            return False # User has no access
         
-        if not authentication.user.requireAccess(self.canChange(None, model), f"Insert call with illegal changes in {self.name}", True):
-            return False # User has no access (and that is suspicious)
+        if not authentication.user.requireAccess(self.canChange(None, model), f"Illegal data insert in {self.name}", f"Data: {str(model)}", True):
+            return False # This change is not permitted
+        
+        authentication.logging.log(f"Insert into {self.name}", f"Data: {str(model)}")
         
         newRule = None
         if self.idField is not None and self.idField in self.form.fields:
@@ -139,29 +149,31 @@ class Repository:
         if model is None:
             return False # No model given
         
-        if not authentication.user.requireAccess(self.canUpdate(id), f"Unauthorized Update call in {self.name} (id: {id})", True):
-            return False # User has no access (and that is suspicious)
+        if not authentication.user.requireAccess(self.canUpdate(id), f"Unauthorized update in {self.name}", f"{fieldName}: {id}, Data: {str(model)}", True):
+            return False # User has no access
+        
+        fieldName = "Line number" if self.idField is None else self.idField
+        authentication.logging.log(f"Update {self.name}", f"{fieldName}: {id}, Data: {str(model)}")
 
         item = self._one(id)
 
         if item is None:
-            fieldName = "item number" if self.idField is None else self.idField
-            authentication.logging.log(f"Error updating in {self.name}: there is no {fieldName} '{id}'")
+            authentication.logging.log(f"Error updating {self.name}", f"{fieldName} {id} not found")
             return None
         
         changes = {}
         for field in model:
             if self.idField is not None and field == self.idField and model[field] != item[field]:
-                authentication.logging.log(f"Error updating in {self.name}: {fieldName} cannot be changed (is ID field)")
+                authentication.logging.log(f"Error updating {self.name}", f"{fieldName} cannot be changed because it is the ID field")
                 return False
-
+            
             if model[field] is not None and (field not in item or item[field] != model[field]):
                 # Update all item fields from the new model (but do not allow updating the ID field and ignore fields with None value)
                 item[field] = model[field]
                 changes[field] = model[field]
 
-        if not authentication.user.requireAccess(self.canChange(id, changes), f"Update call with illegal changes in {self.name} (id: {id})", True):
-            return False # User has no access (and that is suspicious)
+        if not authentication.user.requireAccess(self.canChange(id, changes), f"Illegal data update in {self.name}", f"{fieldName}: {id}, Data: {str(model)}", True):
+            return False # This change is not permitted
 
         if not self.validate("update", item):
             # Form model is not valid (errors have been logged during validation)
@@ -173,14 +185,17 @@ class Repository:
     def delete(self, id):
         """Delete the specified id"""
 
-        if not authentication.user.requireAccess(self.canDelete(id), f"Unauthorized Delete call in {self.name} (id: {id})", True):
-            return False # User has no access (and that is suspicious)
+        fieldName = "Line number" if self.idField is None else self.idField
+        
+        if not authentication.user.requireAccess(self.canDelete(id), f"Unauthorized delete from {self.name}", f"{fieldName}: {id}", True):
+            return False # User has no access
+        
+        authentication.logging.log(f"Delete {self.name}", f"{fieldName}: {id}")
 
         item = self._one(id)
 
         if item is None:
-            fieldName = "item number" if self.idField is None else self.idField
-            authentication.logging.log(f"Error deleting in {self.name}: there is no {fieldName} '{id}'")
+            authentication.logging.log(f"Error deleting {self.name}", f"{fieldName} {id} not found")
             return None
         
         return self._remove(id)
@@ -215,7 +230,7 @@ class FileRepository(Repository):
                 if l > offset + limit:
                     # Over the limit
                     break
-                model = storage.encryption.decrypt(json.loads(line))
+                model = json.loads(storage.encryption.decrypt(line))
                 if self.idField is not None and self.idField in model:
                     items[model[self.idField]] = model
                 else:
@@ -223,7 +238,7 @@ class FileRepository(Repository):
             return items
 
         except Exception as e:
-            authentication.logging.log(f"Error reading from file {self.path}: " + str(e), True)
+            authentication.logging.log(f"Error reading from file", f"File: {self.path}, Error: {str(e)}", True)
             return {}
         
 
@@ -233,7 +248,7 @@ class FileRepository(Repository):
         try:
             if not os.path.exists(self.path):
                 # There is nothing to read
-                return {}
+                return None
             with open(self.path, "r") as file:
                 file.seek(0)
                 content = file.read()
@@ -244,7 +259,7 @@ class FileRepository(Repository):
                 if self.idField is None and l != id:
                     # Skip to the correct line number (only possible if there is no ID field)
                     continue
-                model = storage.encryption.decrypt(json.loads(line))
+                model = json.loads(storage.encryption.decrypt(line))
                 if self.idField is None:
                     # We've found it (by line number)
                     return model
@@ -253,13 +268,13 @@ class FileRepository(Repository):
                     return model
                 elif self.idField is not None:
                     # ID field unexpectedly not included in the validated model (configuration error)
-                    authentication.logging.log(f"Error reading in {self.name}: validated model does not contain ID field '{self.idField}'")
+                    authentication.logging.log(f"Error reading {self.name}", f"Validated model does not contain ID field {self.idField}: {str(model)}")
                     continue
             # If we're still here, the item wasn't found
             return None
 
         except Exception as e:
-            authentication.logging.log(f"Error reading from file {self.path}: " + str(e), True)
+            authentication.logging.log(f"Error reading from file", f"File: {self.path}, Error: {str(e)}", True)
             return None
         
 
@@ -271,7 +286,7 @@ class FileRepository(Repository):
             with open(self.path, "a") as file:
                 file.write(line)
         except Exception as e:
-            authentication.logging.log(f"Error writing to file {self.path}: " + str(e), True)
+            authentication.logging.log(f"Error writing to file", f"File: {self.path}, Error: {str(e)}", True)
             return False
         
         return True
@@ -281,9 +296,10 @@ class FileRepository(Repository):
         """Replace/update a line in the file (by id)"""
     
         try:
+
             if not os.path.exists(self.path):
                 # There is nothing to read
-                return {}
+                return False
             with open(self.path, "r") as file:
                 file.seek(0)
                 content = file.read()
@@ -298,26 +314,80 @@ class FileRepository(Repository):
                     # Keep the content of this line if we've already found or have yet to reach the correct line number (only possible if there is no ID field)
                     newContent += line + "\n"
                     continue
-                model = storage.encryption.decrypt(json.loads(line))
-                if self.idField is None or (self.idField in model and model[self.idField] == id):
+                lineModel = json.loads(storage.encryption.decrypt(line))
+                if self.idField is None or (self.idField in lineModel and lineModel[self.idField] == id):
                     # We've found it: don't keep this line but save the new content
-                    line = storage.encryption.encrypt(json.dumps(model)) + "\n"    
+                    newContent += storage.encryption.encrypt(json.dumps(model)) + "\n"
+                    found = True
                     continue
                 elif self.idField is not None:
                     # ID field unexpectedly not included in the validated model (configuration error)
-                    authentication.logging.log(f"Error reading in {self.name}: validated model does not contain ID field '{self.idField}'")
+                    authentication.logging.log(f"Error reading {self.name}", f"Validated model does not contain ID field {self.idField}: {str(lineModel)}")
                 # If we get here it's not yet found, keep this line as-is and try the next one
                 newContent += line + "\n"
             
             if found == False:
                 return False # The line to update was not found
             
-            with open(self.path, "r") as file:
+            with open(self.path, "w") as file:
                 # Now write the new/updated content
                 file.seek(0)
-                content = file.read()
+                file.write(newContent)
             return True
 
         except Exception as e:
-            authentication.logging.log(f"Error reading or writing file {self.path}: " + str(e), True)
+            authentication.logging.log(f"Error reading or writing file", f"File: {self.path}, Error: {str(e)}", True)
+            return False
+        
+
+    def _remove(self, id):
+        """Remove a line from the file (by id)"""
+    
+        try:
+
+            if not os.path.exists(self.path):
+                # There is nothing to read
+                return False
+            with open(self.path, "r") as file:
+                file.seek(0)
+                content = file.read()
+            content = content.strip("\n").split("\n")
+            l = 0
+            found = False
+            newContent = ""
+
+            for line in content:
+                l += 1 # Line number 
+                if found == True or (self.idField is None and l != id):
+                    # Keep the content of this line if we've already found or have yet to reach the correct line number (only possible if there is no ID field)
+                    newContent += line + "\n"
+                    continue
+                lineModel = json.loads(storage.encryption.decrypt(line))
+                if self.idField is None or (self.idField in lineModel and lineModel[self.idField] == id):
+                    # We've found it: remove (don't keep) this line and skip to the next
+                    found = True
+                    continue
+                elif self.idField is not None:
+                    # ID field unexpectedly not included in the validated model (configuration error)
+                    authentication.logging.log(f"Error reading {self.name}", f"Validated model does not contain ID field {self.idField}: {str(lineModel)}")
+                # If we get here it's not yet found, keep this line as-is and try the next one
+                newContent += line + "\n"
+            
+            if found == False:
+                # The line to delete was not found
+                return False
+            
+            if newContent.strip() == "" and os.path.exists(self.path):
+                # There is no content left to be saved, remove the file because Python does not like reading empty files
+                os.remove(self.path)
+                return True
+            
+            with open(self.path, "w") as file:
+                # Now write the new/updated content
+                file.seek(0)
+                file.write(newContent)
+            return True
+
+        except Exception as e:
+            authentication.logging.log(f"Error reading or writing file", f"File: {self.path}, Error: {str(e)}", True)
             return False

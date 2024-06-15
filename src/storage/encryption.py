@@ -45,7 +45,7 @@ def checkDataHash(data, hash):
     return hashData(bytes.fromhex(salt) + data.encode("utf-8")) == hash
     
 
-def initializeKey():
+def initializeKeys():
     """Ensure an encryption key exists"""
     global encryptor
 
@@ -70,7 +70,7 @@ def initializeKey():
 def encrypt(data):
     """Symmetrically encrypt data"""
     global encryptor
-    return data ### TESTING
+    return data ## TESTING
     data = str(data)
     return encryptor.encrypt(validation.encode("utf-8")).decode("utf-8")
 
@@ -78,7 +78,7 @@ def encrypt(data):
 def decrypt(data):
     """Symmetrically decrypt data"""
     global encryptor
-    return data ### TESTING
+    return data ## TESTING
     try:
         return encryptor.decrypt(validation.encode("utf-8")).decode("utf-8")
     except:

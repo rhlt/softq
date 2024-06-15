@@ -115,7 +115,7 @@ class Hidden(ReadOnly):
 
     def __init__(self, name, rules = None):
         """Initialize as always allowing empty (because it is not editable)"""
-        super().__init__(name, rules, True)
+        super().__init__(name, rules)
 
 
     def run(self):
