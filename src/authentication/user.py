@@ -54,7 +54,7 @@ def login():
         else:
             # Find the user in the Users repository
             foundUser = usersRepository._one(currentUser.name)
-            print("FOUND USER", foundUser)
+            print("## FOUND USER", foundUser)
             foundAdmin = foundUser is not None and foundUser["admin"].upper() == "Y"
 
             if result["username"] == "admin" and result["password"] == " ":

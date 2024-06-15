@@ -51,12 +51,29 @@ class Text:
         return value
     
 
-    def display(self, value):
+    def display(self, value, maxLabelWidth = 20, maxValueWidth = None):
+        """Display the label and value"""
+        label = self.name
+        if maxLabelWidth is not None:
+            if len(label) > maxLabelWidth and maxLabelWidth > 5:
+                label = label[:maxLabelWidth - 3] + "..."
+            elif len(label) > maxLabelWidth:
+                label = label[:maxLabelWidth] # No room for "..."
+            else:
+                label = label.ljust(maxLabelWidth)
+        return " " + label + ": " + self.displayValue(value, maxValueWidth)
+
+
+    def displayValue(self, value, maxWidth = None):
         """Display the value"""
-        label = self.name.ljust(20)
-        if len(label) > 20:
-            label = label[:17] + "..."
-        print((" " + label + ": "), value)
+        if maxWidth is not None:
+            if len(value) > maxWidth and maxWidth > 5:
+                value = value[:maxWidth - 3] + "..."
+            elif len(value) > maxWidth:
+                value = value[:maxWidth] # No room for "..."
+            else:
+                value = value.ljust(maxWidth)
+        return value
 
 
 class Number(Text):

@@ -7,6 +7,7 @@ class Form:
     def __init__(self):
         self.name = "Form"
         self.fields = {}
+        self.displayFields = None
 
 
     def run(self, defaults = None):
@@ -55,8 +56,47 @@ class Form:
     def display(self, model):
         """Display all form fields and their values from a model (which must be validated and written to self.model)"""
         for field in self.fields:
-            self.fields[field].display("(no data)" if field not in model else model[field])
+            print(self.fields[field].display("" if field not in model else model[field]))
         print() # newline
+
+    
+    def getColumns(self):
+        """Get list of columns and widths for table view"""
+        # Default to showing all values with a max width of 15
+        return self.columns if hasattr(self, "columns") else dict(zip([field for field in self.fields], [15 for _ in self.fields]))
+
+
+    def generateHeader(self, padding = 0):
+        """Generate header for table display"""
+
+        columns = self.getColumns()
+        values = []
+        separator = []
+        if padding > 0:
+            values = [padding * " "]
+            separator = [padding * "-"]
+        for field in columns:
+            value = self.fields[field].name
+            maxWidth = columns[field]
+            if len(value) > maxWidth and maxWidth > 5:
+                value = value[:maxWidth - 3] + "..."
+            elif len(value) > maxWidth:
+                value = value[:maxWidth] # No room for "..."
+            else:
+                value = value.ljust(maxWidth)
+            values.append(value)
+            separator.append("-" * len(value))
+        return " | ".join(values) + "\n" + "-+-".join(separator)
+
+    
+    def row(self, model):
+        """Get selected form fields in a table row"""
+
+        columns = self.getColumns()
+        values = []
+        for field in columns:
+            values.append(self.fields[field].displayValue("" if field not in model else model[field], columns[field]))
+        return " | ".join(values)
 
 
 class Login(Form):
@@ -136,7 +176,14 @@ class Log(Form):
             "date": validation.fields.Text("Date"),
             "time": validation.fields.Text("Time"),
             "username": validation.fields.Text("Username", None, True),
-            "activity": validation.fields.Text("Message"),
+            "activity": validation.fields.Text("Activity"),
             "details": validation.fields.Text("Details"),
             "suspicious": validation.fields.FromList("Suspicious", ["Y", "N"]),
+        }
+        self.columns = {
+            "date": 12,
+            "time": 10,
+            "username": 15,
+            "activity": 20,
+            "suspicious": 10,
         }

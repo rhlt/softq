@@ -21,6 +21,7 @@ class Menu:
         self.description = f"Please enter an option number:"
         self.fieldName = "Option"
         self.extraAction = extraAction
+        self.optionSeparator = ": "
 
 
     def run(self):
@@ -52,7 +53,8 @@ class Menu:
             # Generate a field from the list of options
             optionField = validation.fields.FromList(self.fieldName, optionsAvailable + [""])
             for option in optionsAvailable:
-                print(f"  {option.ljust(optionLength)}: {self.options[option].title}")
+                print(f"  {option.ljust(optionLength)}{self.optionSeparator}{self.options[option].title}")
+            print() # newline
         else:
             # There are no options, or none are accessible to the current user
             optionField = validation.fields.EmptyValue("There is no data to be shown")
@@ -94,6 +96,7 @@ class RepositoryMenu(Menu):
         self.limit = 20
         self.deleteWhenViewed = deleteWhenViewed # Repositories that need to be deleted when viewed
         self.extraAction = None
+        self.optionSeparator = " | "
 
 
     def run(self):
@@ -109,9 +112,13 @@ class RepositoryMenu(Menu):
             self.options = {}
             self.description = "You've reached the end of the data. Press enter to view the first page or press Ctrl+C to cancel" if self.offset > 0 else ""
             return
-        menuOptions = map(lambda id: MenuOption(str(items[id]), lambda: self.viewItem(id), self.repository.canRead(id)), items)
+
+
+        menuOptions = map(lambda id: MenuOption(self.repository.form.row(items[id]), lambda: self.viewItem(id), self.repository.canRead(id)), items)
         self.options = dict(zip([str(id) for id in items.keys()], menuOptions))
         self.description = f"Showing items {self.offset+1}-{self.offset+self.limit}\nPlease enter a {self.fieldLabel} to view or press Ctrl+C to cancel"
+        padding = max(len(str(s)) for s in items.keys()) + 2
+        self.description += "\n\n" + self.repository.form.generateHeader(padding)
 
     
     def viewItem(self, id):
@@ -144,6 +151,7 @@ class RepositoryItem(Menu):
         self.fieldName = "Action"
         self.deleteWhenViewed = deleteWhenViewed
         self.extraAction = lambda: self.repository.form.display(self.item)
+        self.optionSeparator = ": "
 
     
     def updateItem(self):
