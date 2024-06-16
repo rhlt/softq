@@ -154,6 +154,13 @@ class User(Form):
             "role": validation.fields.FromList("Role", ["Administrator", "Consultant"]),
             "registrationDate": validation.fields.ReadOnly("Registration date", [validation.rules.date])
         }
+        self.columns = {
+            "password": 15, ## TEST
+            "firstName": 12,
+            "lastName": 16,
+            "role": 16,
+            "registrationDate": 12,
+        }
 
 
 class Consultant(User):

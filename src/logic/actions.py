@@ -23,7 +23,7 @@ def changePassword():
     print("## CHANGE PASSWORD", result)
 
 
-def createNewItem(title, repository, fixedValues = None):
+def createNewItem(title, repository, fixedValues = None, runAfter = lambda _: None):
     """Create a new item in a repository, with default values available"""
 
     print() # newline
@@ -40,6 +40,9 @@ def createNewItem(title, repository, fixedValues = None):
 
     if model is None:
         return # Canceled
+    
+    # Allow some last changes to be made
+    runAfter(model)
     
     if repository.idField is not None and repository.idField in model and repository._one(model[repository.idField]) is not None:
         # Item with this ID already exists!
