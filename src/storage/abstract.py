@@ -162,7 +162,7 @@ class Repository:
                 authentication.logging.log(f"Insert error in {self.name}", f"{field} cannot be set. Data: {str(model)}", True)
                 return False
             if newValue != model[field]:
-                authentication.logging.log(f"Insert error in {self.name}", f"{field} should be '{newValue}'. Data: {str(model)}", True)
+                authentication.logging.log(f"Insert error in {self.name}", f"{field} should be '{newValue}', not '{model[field]}'. Data: {str(model)}", True)
                 model[field] = newValue
 
         return self._add(model)
@@ -200,7 +200,7 @@ class Repository:
                     authentication.logging.log(f"Update error in {self.name}", f"{field} cannot be set. Data: {str(model)}", True)
                     return False
                 if newValue != model[field]:
-                    authentication.logging.log(f"Update error in {self.name}", f"{field} should be '{newValue}'. Data: {str(model)}", True)
+                    authentication.logging.log(f"Update error in {self.name}", f"{field} should be '{newValue}', not '{model[field]}'. Data: {str(model)}", True)
                     item[field] = newValue
                 else:
                     item[field] = model[field]

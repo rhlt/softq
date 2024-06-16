@@ -17,7 +17,7 @@ def mainMenuAction():
     """Action performed whenever the main menu is shown"""
     if not authentication.user.loggedIn():
         return
-    print("You are logged in as", authentication.user.name())
+    print(f"You are logged in as {authentication.user.name()} ({authentication.user.role()})")
     if authentication.user.hasRole(suspiciousLogsRepository.readRole(None, None)):
         suspiciousActivities = suspiciousLogsRepository._list(0, 10)
         suspiciousNumber = len(suspiciousActivities)

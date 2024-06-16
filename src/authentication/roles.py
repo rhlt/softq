@@ -1,5 +1,6 @@
 # Classes for different user roles
 
+import re
 
 class Unauthorized:
     """Basic unauthorized user class, this does not allow the user any access (might not be logged in with password!)"""
@@ -8,6 +9,7 @@ class Unauthorized:
         """Initialize user object with username and data model"""
         self.name = name
         self.model = model
+        self.role = re.sub(r'([a-z])([A-Z])', r"\1 \2", self.__class__.__name__) # ClassName with added spaces ("ClassName" => "Class Name")
     
     def can(self, _):
         """Can't perform any actions"""

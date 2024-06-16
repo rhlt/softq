@@ -21,14 +21,21 @@ def name():
     return currentUser.name if currentUser is not None else None
 
 
+def role():
+    """Get the current role"""
+    return currentUser.role if currentUser is not None and not currentUser.unauthorized() else None
+
+
 def loggedIn():
     """Return if user is correctly logged in"""
     return currentUser is not None and not currentUser.unauthorized()
 
 
-def checkPassword(password):
+def checkPassword(password, user = None):
     """Check if the password is correct for the given user"""
-    if not loggedIn() or currentUser.model is None:
+    if user is None and loggedIn():
+        user = currentUser.model
+    if user is None:
         return False
     return storage.encryption.checkDataHash(password, currentUser.model["password"])
 
@@ -71,7 +78,7 @@ def login():
             if foundUser is not None:
                 foundAdmin = foundUser["role"].upper() == "ADMINISTRATOR"
                 currentUser.model = foundUser
-                if checkPassword(result["password"]):
+                if checkPassword(result["password"], foundUser):
                     # Password is correct, create the correct User class
                     if foundAdmin:
                         currentUser = authentication.roles.Administrator(currentUser.name, currentUser.model)

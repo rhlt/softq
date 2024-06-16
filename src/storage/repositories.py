@@ -40,6 +40,7 @@ class Users(storage.abstract.FileRepository):
         return "admin" # Only admin can create new users
     
     def fieldCheck(self, field, model, value):
+        """Check if the suggested value is permitted in the field (return the permitted value; anything other than the given value will be logged)"""
         if field == "role" and not authentication.user.hasRole("super"):
             return "Consultant" if model is None else model[field] # Do not allow changing the role field unless user is super admin
         return value
