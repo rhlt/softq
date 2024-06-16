@@ -270,7 +270,8 @@ class FileRepository(Repository):
                     break
                 try:
                     # Try to decrypt line and parse as JSON
-                    model = json.loads(storage.encryption.decrypt(line))
+                    model = json.loads(line)
+                    model = { field: storage.encryption.decrypt(value) for field, value in model.items() }
                 except:
                     # Invalid JSON or decryption failed
                     authentication.logging.log("Data parsing", "Raw data: " + str(line), True)
@@ -319,7 +320,8 @@ class FileRepository(Repository):
                     continue
                 try:
                     # Try to decrypt line and parse as JSON
-                    model = json.loads(storage.encryption.decrypt(line))
+                    model = json.loads(line)
+                    model = { field: storage.encryption.decrypt(value) for field, value in model.items() }
                 except:
                     # Invalid JSON or decryption failed
                     authentication.logging.log("Data parsing", "Raw data: " + str(line), True)
@@ -347,7 +349,8 @@ class FileRepository(Repository):
         """Insert a new line into a file"""
 
         try:
-            line = storage.encryption.encrypt(json.dumps(model)) + "\n"
+            model = { field: storage.encryption.encrypt(value) for field, value in model.items() }
+            line = json.dumps(model)
             with open(self.path, "a") as file:
                 file.write(line)
         except Exception as e:
@@ -381,14 +384,17 @@ class FileRepository(Repository):
                     continue
                 try:
                     # Try to decrypt line and parse as JSON
-                    lineModel = json.loads(storage.encryption.decrypt(line))
+                    lineModel = json.loads(line)
+                    lineModel = { field: storage.encryption.decrypt(value) for field, value in lineModel.items() }
                 except:
                     # Invalid JSON or decryption failed
                     authentication.logging.log("Data parsing", "Raw data: " + str(line), True)
                     continue
                 if self.idField is None or (self.idField in lineModel and lineModel[self.idField] == id):
                     # We've found it: don't keep this line but save the new content
-                    newContent += storage.encryption.encrypt(json.dumps(model)) + "\n"
+                    model = { field: storage.encryption.encrypt(value) for field, value in model.items() }
+                    newLine = json.dumps(model)
+                    newContent += newLine + "\n"
                     found = True
                     continue
                 elif self.idField is not None and self.idField not in lineModel:
@@ -436,7 +442,8 @@ class FileRepository(Repository):
                     continue
                 try:
                     # Try to decrypt line and parse as JSON
-                    lineModel = json.loads(storage.encryption.decrypt(line))
+                    lineModel = json.loads(line)
+                    lineModel = { field: storage.encryption.decrypt(value) for field, value in lineModel.items() }
                 except:
                     # Invalid JSON or decryption failed
                     authentication.logging.log("Data parsing", "Raw data: " + str(line), True)

@@ -5,7 +5,7 @@ import re
 import validation.datetime
 
 # General/common rules
-notTooLong = lambda name: (f"{name} should not be longer than 100 characters", lambda s: isinstance(s, str) and len(s) <= 10000) # Always applied
+notTooLong = lambda name: (f"{name} should not be longer than 100 characters", lambda s: isinstance(s, str) and len(s.encode()) <= 100) # Always applied
 noControlCharacters = lambda name: (f"{name} should not contain ASCII control characters", lambda s: reduce(lambda valid, char: ord(char) >= 32 and valid, s, True)) # Always applied
 notEmpty = lambda name: (f"{name} should not be empty", lambda s: isinstance(s, str) and len(s) > 0) # Applied unless "allowEmpty" is explicitly set to True 
 mustBeEmpty = lambda name: (f"{name} must be empty", lambda s: isinstance(s, str) and len(s) == 0) # For "Press enter to continue" displays

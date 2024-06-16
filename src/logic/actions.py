@@ -139,6 +139,7 @@ def createBackup():
         os.unlink(backupLogs) 
 
     zipName = "backup" + str(datetime.datetime.now().strftime('%Y%m%d_%H%M%S')) + ".zip"
+    authentication.logging.log("Generated database backup", f"Filename: {zipName}")
     outputPath = backupPath + "/" + zipName
     print()
     print("Zipping database and logs...")
@@ -174,7 +175,11 @@ def selectBackup(title):
         return
     
     # Ask what file to open
-    print("Please enter the filename of the backup to restore. This must be an existing ZIP file in the 'backups' folder.")
+    print("The following backup files are available:")
+    for file in backupFiles:
+        print("  " + file)
+    print()
+    print("Please enter the filename of the backup to open:")
     return validation.fields.FromList("Backup file", backupFiles).run()
     
 
@@ -195,6 +200,8 @@ def restoreBackup():
     overwrite = validation.fields.Text(f"Do you want to overwrite items that already exist in the live database? (Y/N, or Ctrl+C to cancel)", [validation.rules.valueInList(["Y", "N"])]).run()
     if overwrite is None:
         return # Canceled
+    
+    authentication.logging.log("Restore database backup", f"Filename: {file}")
     
     overwrite = overwrite.upper() == "Y"
 
@@ -220,6 +227,7 @@ def restoreBackup():
 
 
 def extractBackupLogs(showMenu):
+    """Extract logs from a backup file to view them"""
     
     file = selectBackup("View backed up logs")
     if file is None:
@@ -234,6 +242,7 @@ def extractBackupLogs(showMenu):
         return
     
     # Show Logs repository menu
+    authentication.logging.log("View logs in backup", f"Filename: {file}")
     result = showMenu("View logs in " + file, backupLogs)
 
     if os.path.exists(backupLogs):

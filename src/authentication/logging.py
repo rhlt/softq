@@ -18,9 +18,13 @@ def log(activity, details, suspicious = False):
     date = validation.datetime.date()
     time = validation.datetime.time()
 
-    # Restrict message length to prevent trouble when validating the log file contents
-    activity = activity[:10000]
-    details = details[:10000]
+    # Restrict message length to prevent trouble when validating and encrypting the log file contents
+    activity = activity[:100]
+    while len(activity.encode()) > 100:
+        activity = activity[:-1] # Remove double-byte characters safely
+    details = details[:100]
+    while len(details.encode()) > 100:
+        details = details[:-1] # Remove double-byte characters safely
 
     # Replace all ASCII control characters (including newlines and tabs) with a space to make the message valid
     controlChars = dict.fromkeys(range(32), " ")

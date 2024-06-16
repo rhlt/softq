@@ -1,17 +1,24 @@
 # Helper functions for data encryption
 
+import base64
 import hashlib
 import os
 import random
-from cryptography.fernet import Fernet
 
-encryptor = None
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+
+privateKey = None
+publicKey = None
 
 def hashData(data):
     """Hash string data"""
 
     if isinstance(data, str):
-        data = data.encode("utf-8")
+        data = data.encode()
     if not isinstance(data, bytes):
         return None
     return hashlib.sha256(data).hexdigest()
@@ -21,7 +28,7 @@ def hashDataWithSalt(data, saltlen = 8):
     """Hash string data with a random salt"""
 
     if isinstance(data, str):
-        data = data.encode("utf-8")
+        data = data.encode()
     if not isinstance(data, bytes):
         return None
     salt = random.randbytes(saltlen)
@@ -43,52 +50,79 @@ def checkDataHash(data, hash):
         salt = "" # There is no salt
     
     # Compare the hash with the expected hash
-    return hashData(bytes.fromhex(salt) + data.encode("utf-8")) == hash
+    return hashData(bytes.fromhex(salt) + data.encode()) == hash
     
 
 def initializeKeys():
     """Ensure an encryption key exists"""
-    global encryptor
+    global privateKey, publicKey
 
-    if encryptor is not None:
+    if privateKey is not None and publicKey is not None:
         return False # Already initialized
     
     try:
         # Try loading the key from a file
         if not os.path.isdir('./output'):
             os.mkdir("./output")
-        with open("./output/.key", "rb") as file:
-            key = file.read()
-        encryptor = Fernet(key)
-        return False # Key already generated
-    except:
-        # If file does not exist or it is invalid, generate a new one
+            with open("./output/.private-key", "rb") as file:
+                privateKey = serialization.load_pem_private_key(file.read(), password=None, backend=default_backend())
+            # Load the public key from a file
+            with open("./output/.public-key", "rb") as file:
+                publicKey = serialization.load_pem_public_key(file.read(), backend=default_backend())
+    except Exception as e:
+        print("## ERROR", str(e))
+        exit()
+        pass
+    finally:
+        if publicKey is not None and publicKey is not None:
+            return False # Initialization worked
+        # If files do not exist or are invalid, generate a new key pair
         if not os.path.isdir('./output') or not os.access('./', os.R_OK) or not os.access('./', os.W_OK):
             print("Please make sure the working directory and all required files and subfolders are accessible to the application")
             exit()
-        key = Fernet.generate_key()
-        with open("./output/.key", "wb") as file:
-            file.write(key)
-        encryptor = Fernet(key)
-        return True # Key was generated
-            
+        privateKey = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=4096,
+        )
+        publicKey = privateKey.public_key()
+        with open("./output/.private-key", "wb") as file:
+            file.write(privateKey.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption()
+            ))
+        with open("./output/.public-key", "wb") as file:
+            file.write(publicKey.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            ))
+        return True # Keys were generated
 
 
 def encrypt(data):
-    """Symmetrically encrypt data"""
-    global encryptor
+    """Asymmetrically encrypt data"""
+    global publicKey
     data = str(data)
-    if encryptor is None:
+    if publicKey is None:
         initializeKeys()
-    return encryptor.encrypt(data.encode("utf-8")).decode("utf-8")
+
+    return base64.b64encode(publicKey.encrypt(data.encode(), padding.OAEP(
+        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+        algorithm=hashes.SHA256(),
+        label=None
+    ))).decode()
 
 
 def decrypt(data):
-    """Symmetrically decrypt data"""
-    global encryptor
-    if encryptor is None:
+    """Asymmetrically decrypt data"""
+    global privateKey
+    if privateKey is None:
         initializeKeys()
-    return encryptor.decrypt(data.encode("utf-8")).decode("utf-8")    
+    return privateKey.decrypt(base64.b64decode(data.encode()), padding.OAEP(
+        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+        algorithm=hashes.SHA256(),
+        label=None
+    )).decode()
 
 
 def tempPassword():

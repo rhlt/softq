@@ -74,8 +74,8 @@ def login():
 
         foundUser = None
         foundAdmin = None
-        ### if result["username"] == "super_admin" and result["password"] == "Admin_123?":
-        if result["username"] == "admin" and result["password"] == " ":
+        # if result["username"] == "admin" and result["password"] == " ":
+        if result["username"] == "super_admin" and result["password"] == "Admin_123?":
             # Log in as super administrator
             currentUser = authentication.roles.SuperAdministrator(result["username"])
         else:
