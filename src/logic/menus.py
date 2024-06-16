@@ -26,20 +26,21 @@ def mainMenuAction():
             suspiciousNumber = "10 or more"
         if suspiciousNumber:
             print(f"There {'is' if suspiciousNumber == 1 else 'are'} {suspiciousNumber} unviewed suspicious {'activity' if suspiciousNumber == 1 else 'activities'} in the logs!")
+            print(f"Go to System maintenance to view {'it' if suspiciousNumber == 1 else 'them'}")
     print() # newline
 
 
 # Main menu options
 main = Menu("Welcome to the Member Management System", [
     MenuOption("Change your password", changePassword, "nothardcoded"),
-    MenuOption("Manage Users", lambda: users.run(), "admin"),
-    MenuOption("Manage Members", lambda: members.run(), "consult"),
-    MenuOption("System Maintanance", lambda: system.run(), "admin"),
+    MenuOption("Manage users", lambda: users.run(), "admin"),
+    MenuOption("Manage members", lambda: members.run(), "consult"),
+    MenuOption("System maintanance", lambda: system.run(), "admin"),
     MenuOption("Log out (quit application)", lambda: True),
 ], mainMenuAction)
 
 # Users menu options
-users = Menu("Manage Users", [
+users = Menu("Manage users", [
     MenuOption("List users and roles", lambda: repositoryMenu("User overview", usersRepository, False, resetUserPassword), usersRepository.readRole(None, None)),
     MenuOption("Search users", lambda: repositorySearch("Search users", usersRepository, False, resetUserPassword), usersRepository.readRole(None, None)),
     MenuOption("Create a new consultant", lambda: repositoryInsert("Create a new consultant", usersRepository, { "registrationDate": validation.datetime.date(), "password": storage.encryption.tempPassword(), "role": "Consultant" }, hashGeneratedPassword), usersRepository.insertRole()),
@@ -48,7 +49,7 @@ users = Menu("Manage Users", [
 ])
 
 # Members menu options
-members = Menu("Manage Members", [
+members = Menu("Manage members", [
     MenuOption("Add new member", lambda: repositoryInsert("Add new member", membersRepository, { "registrationDate": validation.datetime.date() }), membersRepository.insertRole()),
     MenuOption("Search members", lambda: repositorySearch("Search members", membersRepository), membersRepository.readRole(None, None)),
     MenuOption("View all members", lambda: repositoryMenu("View all members", membersRepository), membersRepository.readRole(None, None)),
@@ -56,7 +57,7 @@ members = Menu("Manage Members", [
 ])
 
 # System menu options
-system = Menu("System Maintenance", [
+system = Menu("System maintenance", [
     MenuOption("Backup or Restore", lambda: print("## NOT IMPLEMENTED"), "super"),
     MenuOption("View system logs", lambda: repositoryMenu("View system logs", logsRepository), logsRepository.readRole(None, None)),
     MenuOption("View new suspicious logs", lambda: repositoryMenu("View new suspicious logs", suspiciousLogsRepository, True), suspiciousLogsRepository.readRole(None, None)),
@@ -68,4 +69,4 @@ system = Menu("System Maintenance", [
 repositoryMenu = lambda title, repository, deleteWhenViewed = False, extraItemOptions = None: RepositoryMenu(title, repository, deleteWhenViewed, extraItemOptions).run()
 repositorySearch = lambda title, repository, deleteWhenViewed = False, extraItemOptions = None: searchItem(title, RepositoryMenu(title, repository, deleteWhenViewed, extraItemOptions))
 repositoryInsert = lambda title, repository, defaults = None, runAfter = lambda _: None: createNewItem(title, repository, defaults, runAfter)
-resetUserPassword = lambda id, model: [MenuOption("Reset password (generate temporary password)", lambda: resetPassword(id, model))]
+resetUserPassword = lambda id, model: [MenuOption("Reset password (generate temporary password)", lambda: resetPassword(id, model), usersRepository.updateRole(id, model))]
