@@ -43,7 +43,7 @@ class Menu:
         optionsAvailable = []
         optionLength = 0
         for option in self.options:
-            if self.options[option].role is not None and not authentication.user.hasAccess(self.options[option].role):
+            if self.options[option].role is not None and not authentication.user.hasRole(self.options[option].role):
                 # Only show menu items the user is supposed to see
                 continue
             optionLength = len(option) if optionLength < len(option) else optionLength
@@ -114,7 +114,7 @@ class RepositoryMenu(Menu):
             return
 
 
-        menuOptions = map(lambda id: MenuOption(self.repository.form.row(items[id]), lambda: self.viewItem(id), self.repository.canRead(id)), items)
+        menuOptions = map(lambda id: MenuOption(self.repository.form.row(items[id]), lambda: self.viewItem(id), self.repository.readRole(id, items[id])), items)
         self.options = dict(zip([str(id) for id in items.keys()], menuOptions))
         self.description = f"Showing items {self.offset+1}-{self.offset+self.limit}\nPlease type the {self.fieldLabel} to view or press Ctrl+C to cancel"
         padding = max(len(str(s)) for s in items.keys())
@@ -195,12 +195,12 @@ class RepositoryItem(Menu):
         if not self.deleteWhenViewed:
             self.options = [
                 MenuOption(f"Return to {self.label} list", lambda: True),
-                MenuOption(f"Edit {self.label} {self.id}", self.updateItem, self.repository.canUpdate(self.id)),
-                MenuOption(f"Delete {self.label} {self.id}", self.deleteItem, self.repository.canDelete(self.id)),
+                MenuOption(f"Edit {self.label} {self.id}", self.updateItem, self.repository.updateRole(self.id, self.item)),
+                MenuOption(f"Delete {self.label} {self.id}", self.deleteItem, self.repository.deleteRole(self.id, self.item)),
             ]
         else:
             self.options = [
-                MenuOption(f"Mark as viewed", lambda: self.repository.delete(self.id), self.repository.canDelete(self.id)),
+                MenuOption(f"Mark as viewed", lambda: self.repository.delete(self.id), self.repository.deleteRole(self.id, self.item)),
                 MenuOption(f"Return without marking as viewed", lambda: True),
             ]
 

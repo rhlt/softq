@@ -63,17 +63,13 @@ def login():
         ### if result["username"] == "super_admin" and result["password"] == "Admin_123?":
         if result["username"] == "admin" and result["password"] == " ":
             # Log in as super administrator
-            currentUser = authentication.roles.SuperAdministrator(result["username"])
+            currentUser = authentication.roles.Administrator(result["username"])
         else:
             # Find the user in the Users repository
-            foundUser = usersRepository._one(currentUser.name) # Can't use readOne here as that will fail because we're not logged in yet
-            if foundUser is not None and not usersRepository.form.validate(foundUser):
-                # Make sure it is valid (_one doesn't do that)
-                authentication.logging.log("Login as invalid user", str(foundUser), True)
-                foundUser = None
+            foundUser = usersRepository.readInternal(currentUser.name)
 
             if foundUser is not None:
-                foundAdmin = foundUser["admin"].upper() == "Y"
+                foundAdmin = foundUser["role"].upper() == "ADMINISTRATOR"
                 currentUser.model = foundUser
                 if checkPassword(result["password"]):
                     # Password is correct, create the correct User class
@@ -113,7 +109,7 @@ def login():
     return True
 
 
-def hasAccess(role):
+def hasRole(role):
     """Check if current user has access to role"""
     global currentUser
 
@@ -133,7 +129,7 @@ def requireAccess(role, activity, details, suspicious = False):
         # Login was canceled
         return False
 
-    if not hasAccess(role):
+    if not hasRole(role):
         authentication.logging.log(activity, details, suspicious)
         print("You are not allowed to perform this action. This incident will be reported.")
         return False

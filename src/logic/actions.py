@@ -23,7 +23,7 @@ def changePassword():
     print("## CHANGE PASSWORD", result)
 
 
-def createNewItem(title, repository, defaults = None):
+def createNewItem(title, repository, fixedValues = None):
     """Create a new item in a repository, with default values available"""
 
     print() # newline
@@ -31,14 +31,23 @@ def createNewItem(title, repository, defaults = None):
     print("*" * len(title))
 
     print("Please complete all fields or press Ctrl+C to cancel")
+
+    if fixedValues is None:
+        fixedValues = {}
     
-    model = repository.form.run(defaults)    
+    model = repository.form.run(fixedValues, fixedValues.keys())
     print("## MODEL", model)
 
     if model is None:
         return # Canceled
-
-    if repository.insert(model):
-        validation.fields.EmptyValue(f"{repository.form.name} added successfully").run()
+    
+    if repository.idField is not None and repository.idField in model and repository._one(model[repository.idField]) is not None:
+        # Item with this ID already exists!
+        print(f"{repository.form.name} with {repository.form.fields[repository.idField].name} '{model[repository.idField]}' already exists!")
+    elif repository.insert(model):
+        # Insertion was successful
+        print(f"{repository.form.name} added successfully")
     else:
-        validation.fields.EmptyValue(f"Failed to add {repository.form.name}").run()
+        # Insertion was not successful (?)
+        print(f"Failed to add {repository.form.name} (please check the logs)")
+    validation.fields.EmptyValue(f"Press enter to go back").run()

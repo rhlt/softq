@@ -68,8 +68,8 @@ class Text:
     def displayValue(self, value, maxWidth = None):
         """Display the value"""
         value = str(value)
-        if value in self.displayValues:
-            value = self.displayValues[value]
+        if value.upper() in self.displayValues:
+            value = self.displayValues[value.upper()]
         if maxWidth is not None:
             if len(value) > maxWidth and maxWidth > 5:
                 value = value[:maxWidth - 3] + "..."
@@ -113,11 +113,15 @@ class FromList(Text):
         if not isinstance(allowedValues, list) or len(allowedValues) == 0:
             # If allowedValues is empty or invalid, make sure to allow value to be empty
             allowedValues = [""]
+            displayValues = None
         super().__init__(name, [], "" in allowedValues)
         # Create custom rule for the list of allowed values
         self.rules.append(validation.rules.valueInList(allowedValues)(self.name))
-        if displayValues is not None and len(allowedValues) == len(displayValues):
-            self.displayValues = dict(zip(allowedValues, displayValues))
+        if displayValues is None:
+            # Set displayValues equal to allowedValues (this will display upper and lowercase as intended even if the actual data differs)
+            displayValues = allowedValues
+        if len(allowedValues) == len(displayValues):
+            self.displayValues = dict(zip([value.upper() for value in allowedValues], displayValues))
 
 
 class ReadOnly(Text):

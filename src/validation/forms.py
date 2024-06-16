@@ -62,7 +62,9 @@ class Form:
         if model is None:
             return
         for field in self.fields:
-            print(self.fields[field].display("" if field not in model else model[field]))
+            row = self.fields[field].display("" if field not in model else model[field])
+            if row is not None:
+                print(row)
         print() # newline
 
     
@@ -147,8 +149,26 @@ class User(Form):
                 validation.rules.validUsernameCharacters,
             ]),
             "password": validation.fields.Hidden("Password"),
-            "admin": validation.fields.FromList("Role", ["Y", "N"], ["Administrator", "Consultant"])
+            "role": validation.fields.FromList("Role", ["Administrator", "Consultant"])
         }
+
+
+class Consultant(User):
+    """Create a consultant user form with fixed role"""
+
+    def __init__(self):
+        super().__init()
+        self.name = "Consultant"
+        self.fields["role"] = validation.fields.Hidden("Role", [validation.rules.valueInList("Consultant")])
+
+
+class Administrator(User):
+    """Create a administrator user form with fixed role"""
+
+    def __init__(self):
+        super().__init()
+        self.name = "Administrator"
+        self.fields["role"] = validation.fields.Hidden("Role", [validation.rules.valueInList("Administrator")])
 
 
 class Member(Form):

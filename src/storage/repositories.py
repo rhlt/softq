@@ -11,13 +11,13 @@ class Members(storage.abstract.FileRepository):
         self.form = validation.forms.Member() # User form with all fields
         self.idField = "id"
     
-    def canRead(self, id):
+    def readRole(self, id, item):
         return "consult"
-    def canUpdate(self, id):
+    def updateRole(self, id, item):
         return "consult"
-    def canDelete(self, id):
+    def deleteRole(self, id, item):
         return "admin" # Only admin can delete member
-    def canInsert(self):
+    def insertRole(self):
         return "consult"
     
 
@@ -29,14 +29,19 @@ class Users(storage.abstract.FileRepository):
         self.form = validation.forms.User() # User form with all fields
         self.idField = "username"
     
-    def canRead(self, id):
-        return "consult" if authentication.user.name() == id else "admin" # Consultant can read their own profile
-    def canUpdate(self, id):
-        return "consult" if authentication.user.name() == id else "admin" # Consultant can update their own profile
-    def canDelete(self, id):
-        return "none" if authentication.user.name() == id else "admin" # No one can delete their own profile
-    def canInsert(self):
+    def readRole(self, id, item):
+        return "admin"
+    def updateRole(self, id, item):
+        return "super"
+    def deleteRole(self, id, item):
+        return "none" if authentication.user.name() == id else "admin" if item["role"].upper() == "CONSULTANT" else "super" # No one can delete their own profile
+    def insertRole(self):
         return "admin" # Only admin can create new users
+    
+    def fieldCheck(self, field, model, value):
+        if field == "role" and not authentication.user.hasRole("super"):
+            return "Consultant" if model is None else model[field] # Do not allow changing the role field unless user is super admin
+        return value
     
 
 class Logs(storage.abstract.FileRepository):
@@ -46,7 +51,7 @@ class Logs(storage.abstract.FileRepository):
         super().__init__("./output/logs")
         self.form = validation.forms.Log() # Log form with all fields
     
-    def canRead(self, id):
+    def readRole(self, id, item):
         return "admin" # Overwrite 'read' access role
     
 
@@ -57,7 +62,7 @@ class SuspiciousLogs(storage.abstract.FileRepository):
         super().__init__("./output/logs-suspicious")
         self.form = validation.forms.Log() # Log form with all fields
     
-    def canRead(self, id):
+    def readRole(self, id, item):
         return "admin" # Overwrite 'read' access role
-    def canDelete(self, id):
+    def deleteRole(self, id, item):
         return "admin" # Overwrite 'delete' access role (to "mark as read" means to delete from here; all logs will stay available in the Logs repository)
