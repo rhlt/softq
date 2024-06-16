@@ -16,6 +16,7 @@ class Repository:
 
     def __init__(self):
         self.form = validation.forms.Form()
+        self.editForm = lambda item: self.form # Allow overwriting the edit/update form based on the item
         self.name = re.sub(r'([a-z])([A-Z])', r"\1 \2", self.__class__.__name__) # ClassName with added spaces ("ClassName" => "Class Name")
         self.idField = None # Can be overwritten by subclass or kept to use Nth item
     
@@ -87,7 +88,7 @@ class Repository:
         return { id: item for id, item in items.items() if self.validate("Read", item) and self.readRole(id, item) }
     
 
-    def readInternal(self, id):
+    def readInternal(self, id, shouldExist = True):
         """Read one item by ID (what 'ID' means depends on the {idField} property), for internal use without access checking"""
 
         fieldName = "Line number" if self.idField is None else self.idField
@@ -95,7 +96,8 @@ class Repository:
         item = self._one(id)
 
         if item is None:
-            authentication.logging.log(f"Error reading in {self.name}", f"There is no {fieldName}: {id}")
+            if shouldExist:
+                authentication.logging.log(f"Error reading in {self.name}", f"There is no {fieldName}: {id}")
             return None
         
         if not self.validate("Read", item):
@@ -185,7 +187,6 @@ class Repository:
             authentication.logging.log(f"Update error in {self.name}", f"{fieldName} '{id}' not found")
             return None
         
-        changes = {}
         for field in model:
             if self.idField is not None and field == self.idField and model[field] != item[field]:
                 authentication.logging.log(f"Update error in {self.name}", f"{fieldName} cannot be changed because it is the ID field", True)
@@ -193,22 +194,20 @@ class Repository:
             
             if model[field] is not None and (field not in item or item[field] != model[field]):
                 # Update all item fields from the new model (but do not allow updating the ID field and ignore fields with None value)
-                item[field] = model[field]
-                changes[field] = model[field]
+                            
+                newValue = self.fieldCheck(field, item, model[field]) # Check if field values are permitted to be set
+                if newValue is None:
+                    authentication.logging.log(f"Update error in {self.name}", f"{field} cannot be set. Data: {str(model)}", True)
+                    return False
+                if newValue != model[field]:
+                    authentication.logging.log(f"Update error in {self.name}", f"{field} should be '{newValue}'. Data: {str(model)}", True)
+                    item[field] = newValue
+                else:
+                    item[field] = model[field]
 
         if not self.validate("Update", item):
             # Form model is not valid (errors have been logged during validation)
             return False
-        
-        for field in changes:
-            # Check if field values are permitted to be set
-            newValue = self.fieldCheck(field, item, changes[field])
-            if newValue is None:
-                authentication.logging.log(f"Update error in {self.name}", f"{field} cannot be set. Data: {str(changes)}", True)
-                return False
-            if newValue != model[field]:
-                authentication.logging.log(f"Update error in {self.name}", f"{field} should be '{newValue}'. Data: {str(changes)}", True)
-                model[field] = newValue
         
         return self._replace(id, model)
     
@@ -224,7 +223,7 @@ class Repository:
             authentication.logging.log(f"Delete error in {self.name}", f"{fieldName} '{id}' not found")
             return None
 
-        if not authentication.user.requireAccess(self.deleteRole(id, self.readInternal(id) if exists else None), f"Unauthorized delete from {self.name}", f"{fieldName}: {id}", True):
+        if not authentication.user.requireAccess(self.deleteRole(id, self.readInternal(id, False) if exists else None), f"Unauthorized delete from {self.name}", f"{fieldName}: {id}", True):
             return False # User has no access
         
         authentication.logging.log(f"Delete from {self.name}", f"{fieldName}: {id}")
@@ -370,7 +369,7 @@ class FileRepository(Repository):
                     newContent += storage.encryption.encrypt(json.dumps(model)) + "\n"
                     found = True
                     continue
-                elif self.idField is not None and self.idField not in model:
+                elif self.idField is not None and self.idField not in lineModel:
                     # ID field unexpectedly not included in the validated model (configuration error)
                     authentication.logging.log(f"Validation error in {self.name}", f"Validated model does not contain ID field {self.idField}: {str(lineModel)}", True)
                 # If we get here it's not yet found, keep this line as-is and try the next one
@@ -424,7 +423,7 @@ class FileRepository(Repository):
                     # We've found it: remove (don't keep) this line and skip to the next
                     found = True
                     continue
-                elif self.idField is not None and self.idField not in model:
+                elif self.idField is not None and self.idField not in lineModel:
                     # ID field unexpectedly not included in the validated model (configuration error)
                     authentication.logging.log(f"Validation error in {self.name}", f"Validated model does not contain ID field {self.idField}: {str(lineModel)}", True)
                 # If we get here it's not yet found, keep this line as-is and try the next one

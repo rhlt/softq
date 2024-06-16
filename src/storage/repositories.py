@@ -27,12 +27,13 @@ class Users(storage.abstract.FileRepository):
     def __init__(self):
         super().__init__("./output/users")
         self.form = validation.forms.User() # User form with all fields
+        # self.editForm = lambda item: validation.forms.User() if authentication.user.hasRole("super") else validation.forms.Consultant() if item["role"] == "CONSULTANT" else validation.forms.Administrator()
         self.idField = "username"
     
     def readRole(self, id, item):
         return "admin"
     def updateRole(self, id, item):
-        return "super"
+        return "admin" if item["role"].upper() == "CONSULTANT" else "super"
     def deleteRole(self, id, item):
         return "none" if authentication.user.name() == id else "admin" if item["role"].upper() == "CONSULTANT" else "super" # No one can delete their own profile
     def insertRole(self):

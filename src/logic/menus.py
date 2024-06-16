@@ -32,8 +32,8 @@ def mainMenuAction():
 main = Menu("Welcome to the Member Management System", [
     MenuOption("Change your password", changePassword, "nothardcoded"),
     MenuOption("List users and roles", lambda: repositoryMenu("User overview", usersRepository).run(), usersRepository.readRole(None, None)),
-    MenuOption("Create a new consultant", lambda: repositoryInsert("Create a new consultant", usersRepository, { "password": storage.encryption.tempPassword(), "role": "Consultant" }), usersRepository.insertRole()),
-    MenuOption("Create a new administrator", lambda: repositoryInsert("Create a new administrator", usersRepository, { "password": storage.encryption.tempPassword(), "role": "Administrator" }), "super"),
+    MenuOption("Create a new consultant", lambda: repositoryInsert("Create a new consultant", usersRepository, { "registrationDate": validation.datetime.date(), "password": storage.encryption.tempPassword(), "role": "Consultant" }), usersRepository.insertRole()),
+    MenuOption("Create a new administrator", lambda: repositoryInsert("Create a new administrator", usersRepository, { "registrationDate": validation.datetime.date(),"password": storage.encryption.tempPassword(), "role": "Administrator" }), "super"),
     MenuOption("Backup or Restore", lambda: print("## NOT IMPLEMENTED")),
     MenuOption("View system logs", lambda: repositoryMenu("View system logs", logsRepository).run(), logsRepository.readRole(None, None)),
     MenuOption("View new suspicious logs", lambda: repositoryMenu("View new suspicious logs", suspiciousLogsRepository, True).run(), suspiciousLogsRepository.readRole(None, None)),

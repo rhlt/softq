@@ -165,7 +165,8 @@ class RepositoryItem(Menu):
         print(f"Edit {self.label} {self.id}")
         print("*" * len(f"Edit {self.label} {self.id}"))
         print("Please enter the updated values. Leave values empty to keep the originals:")
-        model = self.repository.form.run(self.item, [self.repository.idField])
+        form = self.repository.editForm(self.item)
+        model = form.run(self.item, [self.repository.idField])
         self.repository.update(self.id, model)
         return False # Return to (updated) RepositoryItem
 

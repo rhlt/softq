@@ -149,7 +149,10 @@ class User(Form):
                 validation.rules.validUsernameCharacters,
             ]),
             "password": validation.fields.Hidden("Password"),
-            "role": validation.fields.FromList("Role", ["Administrator", "Consultant"])
+            "firstName": validation.fields.Text("First name"),
+            "lastName": validation.fields.Text("Last name"),
+            "role": validation.fields.FromList("Role", ["Administrator", "Consultant"]),
+            "registrationDate": validation.fields.ReadOnly("Registration date", [validation.rules.date])
         }
 
 
@@ -157,7 +160,7 @@ class Consultant(User):
     """Create a consultant user form with fixed role"""
 
     def __init__(self):
-        super().__init()
+        super().__init__()
         self.name = "Consultant"
         self.fields["role"] = validation.fields.Hidden("Role", [validation.rules.valueInList("Consultant")])
 
@@ -166,7 +169,7 @@ class Administrator(User):
     """Create a administrator user form with fixed role"""
 
     def __init__(self):
-        super().__init()
+        super().__init__()
         self.name = "Administrator"
         self.fields["role"] = validation.fields.Hidden("Role", [validation.rules.valueInList("Administrator")])
 

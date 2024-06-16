@@ -63,10 +63,10 @@ def login():
         ### if result["username"] == "super_admin" and result["password"] == "Admin_123?":
         if result["username"] == "admin" and result["password"] == " ":
             # Log in as super administrator
-            currentUser = authentication.roles.Administrator(result["username"])
+            currentUser = authentication.roles.SuperAdministrator(result["username"])
         else:
             # Find the user in the Users repository
-            foundUser = usersRepository.readInternal(currentUser.name)
+            foundUser = usersRepository.readInternal(currentUser.name, False)
 
             if foundUser is not None:
                 foundAdmin = foundUser["role"].upper() == "ADMINISTRATOR"
