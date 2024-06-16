@@ -34,10 +34,10 @@ def log(activity, details, suspicious = False):
     data = { "date": date, "time": time, "activity": activity, "details": details, "username": "" if username is None else username, "suspicious": "Y" if suspicious else "N" }
 
     # Convert to string and create a field to validate it
-    logstring = json.dumps(data)
-    # print("## LOG", logstring)
-
-    line = storage.encryption.encrypt(logstring) + "\n"
+    # print("## LOG", data)
+    data = { field: storage.encryption.encrypt(value) for field, value in data.items() }
+    line = json.dumps(data) + "\n"
+    print("## LOG", line + "\n")
     with open("./output/logs", "a") as file:
         file.write(line)
     if suspicious:
