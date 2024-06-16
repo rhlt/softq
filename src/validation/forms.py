@@ -143,8 +143,7 @@ class User(Form):
             "registrationDate": validation.fields.ReadOnly("Registration date", [validation.rules.date])
         }
         self.columns = {
-            "password": 30, ## TEST
-            "firstName": 12,
+            "firstName": 16,
             "lastName": 16,
             "role": 16,
             "registrationDate": 12,

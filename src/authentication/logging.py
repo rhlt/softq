@@ -31,8 +31,8 @@ def log(activity, details, suspicious = False):
 
     # Convert to string and create a field to validate it
     logstring = json.dumps(data)
+    print("## LOG", logstring)
 
-    print("## LOG", data)
     line = storage.encryption.encrypt(logstring) + "\n"
     with open("./output/logs", "a") as file:
         file.write(line)

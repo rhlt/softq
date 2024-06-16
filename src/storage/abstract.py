@@ -63,7 +63,7 @@ class Repository:
         """Validate form model and log all validation errors"""
 
         if self.idField is not None and self.idField not in model:
-            authentication.logging.log(f"{action} invalid data in {self.name}", f"Field '{self.idField}'): Missing ID-field", True)
+            authentication.logging.log(f"{action} invalid data in {self.name}", f"Field '{self.idField}'): Missing ID field {self.idField} in {str(model)}", True)
             return False
         if self.form.validate(model):
             return True
@@ -292,7 +292,7 @@ class FileRepository(Repository):
                     items[model[self.idField]] = model
                 else:
                     items[l] = model
-            self.nextOffset = l
+            self.nextOffset = l if l > offset + limit else offset + limit
             return items
 
         except Exception as e:
@@ -495,13 +495,15 @@ class SQLiteRepository(Repository):
         return value
     
 
-    def _query(self, query, params = (), returnAll = None, encryptParams = True):
+    def _query(self, query, params = (), returnAll = None, leaveParamsUnencrypted = 0, leaveEncrypted = False):
         """Perform a database query"""
         if not self.initialized:
             authentication.logging.log(f"Querying uninitialized database", f"File: {self.path}, Query: {query}, Parameters: {str(params)}, Error: {str(e)}", True)
-            return False # Not yet initialized
+            return None # Not yet initialized
         try:
-            params = tuple(map(storage.encryption.encrypt, params))
+            # Encrypt all but last 'paramLeaveOpen' parameters (useful for queries like: UPDATE ?, ?, ? WHERE ID = ? -- where the last parameter should stay unencrypted)
+            leaveParamsUnencrypted = leaveParamsUnencrypted if leaveParamsUnencrypted <= len(params) else len(params)
+            params = tuple(map(storage.encryption.encrypt, params[:-leaveParamsUnencrypted] if leaveParamsUnencrypted > 0 else params)) + ((params[-leaveParamsUnencrypted],) if leaveParamsUnencrypted > 0 else tuple())
             with sqlite3.connect(self.path) as sql:
                 cursor = sql.cursor()
                 cursor.execute(query, params)
@@ -511,16 +513,16 @@ class SQLiteRepository(Repository):
                 # Return the result if parameter returnAll is set to True [all] or False [one], but not None
                 if returnAll:
                     results = cursor.fetchall()
-                    if results is False:
+                    if not results:
                         # No results
                         return []
-                    return [tuple(map(storage.encryption.decrypt, result)) for result in results]
+                    return results if leaveEncrypted else [tuple(map(storage.encryption.decrypt, result)) for result in results]
                 else:
                     result = cursor.fetchone()
-                    if results is False:
+                    if not result:
                         # No result
                         return None
-                    return tuple(map(storage.encryption.decrypt, result))
+                    return results if leaveEncrypted else tuple(map(storage.encryption.decrypt, result))
             return True
         except Exception as e:
             authentication.logging.log(f"Error querying database", f"File: {self.path}, Query: {query}, Parameters: {str(params)}, Error: {str(e) if len(str(e)) > 0 else 'Data integrety error'}", True)
@@ -552,32 +554,73 @@ class SQLiteRepository(Repository):
         if not re.search(r'^\d+$', str(offset)) or not re.search(r'^\d+$', str(limit)):
             return None
         
+        if self.idField is not None:
+            offset = int(offset)
+            limit = int(limit)
+            totalResults = 0
+            keyedResults = {}
+            results = ["dummy"]
+            while len(results) > 0 and totalResults < limit:
+                # Because data is encrypted and randomized, there is no other way than to just loop through everything to find it
+                results = self._query(f"SELECT {self._fields()} FROM {self.table} LIMIT {limit} OFFSET {offset}", (), True)
+                fields = list(self.form.fields.keys())
+                if results is None:
+                    break
+                for result in results:
 
-        ### IF SEARCH...
-        
-        results = self._query(f"SELECT {self._fields()} FROM {self.table} LIMIT {limit} OFFSET {offset}", (), True)
-        count = len(results)
-        self.nextOffset = offset + count
+                    found = True
+                    if search is not None:
+                        # Check if the search parameter is found in any of the fields
+                        found = False
+                        for value in result:
+                            if str(search).upper() in str(value).upper():
+                                found = True
+                                break
+                    if found:
+                        # We found a match!
+                        parsedResult = dict(zip(fields, result))
+                        if self.idField in parsedResult:
+                            keyedResults[parsedResult[self.idField]] = parsedResult
+                            totalResults += 1
+                        else:
+                            authentication.logging.log(f"Read invalid data in {self.name}", f"Field '{self.idField}'): Missing ID field {self.idField} in {str(parsedResult)}", True)
+                            continue
+                        if totalResults >= limit:
+                            break
+                if totalResults < limit:
+                    offset += limit
+            self.nextOffset = offset + totalResults if totalResults < limit else offset + limit
+            return keyedResults
 
-        keyedResults = {}
-        fields = list(self.form.fields.keys())
-        for result in results:
-            # Loop through the results to key them correctly
-            parsedResult = dict(zip(fields, result)) 
-            if self.idField is not None and self.idField in parsedResult:
-                keyedResults[parsedResult[self.idField]] = parsedResult
-            else:
-                authentication.logging.log(f"Read invalid data in {self.name}", f"Field '{self.idField}'): Missing ID-field", True)
-                continue
-        return keyedResults
+
+    def _findEncrypted(self, id):
+        """Helper function to find the encrypted ID as it is stored in the database"""
+        if self.idField is not None:
+            offset = 0
+            limit = 20
+            results = ["dummy"]
+            while len(results) > 0:
+                # Because data is encrypted and randomized, there is no other way than to just loop through everything to find it
+                results = self._query(f"SELECT {self._safeName(self.idField)} FROM {self.table} LIMIT {limit} OFFSET {offset}", (), True, 0, True)
+                fields = list(self.form.fields.keys())
+                if results is None:
+                    return None # Nothing found
+                for result in results:
+                    parsedResult = dict(zip(fields, result))
+                    if self.idField in parsedResult and storage.encryption.decrypt(parsedResult[self.idField]).upper() == str(id).upper():
+                        return parsedResult[self.idField] # FOUND!
+                offset += limit
+            return None # Not found...
 
 
     def _one(self, id):
         """Get one item in the repository (by id)"""
-        if self.idField is not None:
-            result = self._query(f"SELECT {self._fields()} FROM {self.table} WHERE {self._safeName(self.idField)} = ? LIMIT 1", (id,), False)
-            fields = list(self.form.fields.keys())
-            return dict(zip(fields, result)) 
+        encrypted = self._findEncrypted(id)
+        if encrypted is not None:
+            result = self._query(f"SELECT {self._fields()} FROM {self.table} WHERE {self._safeName(self.idField)} = ?", (encrypted,), False, 1)
+            if result is None:
+                return None
+            return dict(zip(self.form.fields, result))
         
 
     def _add(self, model):
@@ -588,11 +631,15 @@ class SQLiteRepository(Repository):
 
     def _replace(self, id, model):
         """Replace/update a row in the database (by id)"""
-        if self.idField is not None:
-            return self._query(f'UPDATE {self.table} SET {self._fields("= ?")} WHERE {self._safeName(self.idField)} = ?', tuple(model.values()) + (id,))
+        encrypted = self._findEncrypted(id)
+        if encrypted is not None:
+            return self._query(f'UPDATE {self.table} SET {self._fields("= ?")} WHERE {self._safeName(self.idField)} = ?', tuple(model.values()) + (encrypted,), None, 1)
+        return False # Not found
         
 
     def _remove(self, id):
         """Remove a row from the database (by id)"""
-        if self.idField is not None:
-            return self._query(f"DELETE FROM {self.table} WHERE {self._safeName(self.idField)} = ? LIMIT 1", (id,), False)
+        encrypted = self._findEncrypted(id)
+        if encrypted is not None:
+            return self._query(f'DELETE FROM {self.table} WHERE {self._safeName(self.idField)} = ?', (encrypted,), None, 1)
+        return False # Not found
