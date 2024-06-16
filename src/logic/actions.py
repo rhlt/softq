@@ -1,6 +1,8 @@
 # Logic for actions that fall outside the menus and repository table view
 
+from functools import reduce
 import datetime
+import random
 import os
 import validation.fields
 import validation.forms
@@ -251,3 +253,16 @@ def extractBackupLogs(showMenu):
 
     return result
 
+
+def generateMemberId():
+    """Generate a new, valid, unused member ID for the current year"""
+
+    newID = validation.datetime.shortYear()
+    for _ in range(7):
+        # Add 7 random digits
+        newID += random.choice("0123456789")
+    newID += str(reduce(lambda check, digit: (check + ord(digit) - 8) % 10, newID, 0))
+    if storage.repositories.Users().exists(newID):
+        # If it randomly happens to exist, try again
+        return generateMemberId()
+    return newID

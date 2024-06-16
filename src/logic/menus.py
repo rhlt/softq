@@ -1,7 +1,7 @@
 # The main menu; the entry point into the application
 
 from logic.interface import Menu, MenuOption, RepositoryMenu
-from logic.actions import searchItem, createNewItem, changePassword, hashGeneratedPassword, resetPassword, createBackup, restoreBackup, extractBackupLogs
+from logic.actions import searchItem, createNewItem, changePassword, hashGeneratedPassword, resetPassword, createBackup, restoreBackup, extractBackupLogs, generateMemberId
 import authentication.user
 import storage.encryption
 import storage.repositories
@@ -50,7 +50,7 @@ users = Menu("Manage users", [
 
 # Members menu options
 members = Menu("Manage members", [
-    MenuOption("Add new member", lambda: repositoryInsert("Add new member", membersRepository, { "registrationDate": validation.datetime.date() }), membersRepository.insertRole()),
+    MenuOption("Add new member", lambda: repositoryInsert("Add new member", membersRepository, { "id": generateMemberId(), "registrationDate": validation.datetime.date() }), membersRepository.insertRole()),
     MenuOption("Search members", lambda: repositorySearch("Search members", membersRepository), membersRepository.readRole(None, None)),
     MenuOption("View all members", lambda: repositoryMenu("View all members", membersRepository), membersRepository.readRole(None, None)),
     MenuOption("Back to Main Menu", lambda: True),
