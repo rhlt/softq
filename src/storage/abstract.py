@@ -503,12 +503,13 @@ class SQLiteRepository(Repository):
         try:
             # Encrypt all but last 'paramLeaveOpen' parameters (useful for queries like: UPDATE ?, ?, ? WHERE ID = ? -- where the last parameter should stay unencrypted)
             leaveParamsUnencrypted = leaveParamsUnencrypted if leaveParamsUnencrypted <= len(params) else len(params)
+            originalParams = params
             params = tuple(map(storage.encryption.encrypt, params[:-leaveParamsUnencrypted] if leaveParamsUnencrypted > 0 else params)) + ((params[-leaveParamsUnencrypted],) if leaveParamsUnencrypted > 0 else tuple())
             with sqlite3.connect(self.path) as sql:
                 cursor = sql.cursor()
                 cursor.execute(query, params)
                 sql.commit()
-                authentication.logging.log(f"Query {self.table}", f"File: {self.path}, Query: {query}, Parameters: {str(params)}")
+                authentication.logging.log(f"Query {self.table}", f"File: {self.path}, Query: {query}, Parameters: {str(originalParams)}, Encrypted parameters: {str(params)}")
             if returnAll is not None:
                 # Return the result if parameter returnAll is set to True [all] or False [one], but not None
                 if returnAll:
@@ -525,7 +526,7 @@ class SQLiteRepository(Repository):
                     return results if leaveEncrypted else tuple(map(storage.encryption.decrypt, result))
             return True
         except Exception as e:
-            authentication.logging.log(f"Error querying database", f"File: {self.path}, Query: {query}, Parameters: {str(params)}, Error: {str(e) if len(str(e)) > 0 else 'Data integrety error'}", True)
+            authentication.logging.log(f"Error querying database", f"File: {self.path}, Query: {query}, Parameters: {str(originalParams)}, Encrypted parameters: {str(params)}, Error: {str(e) if len(str(e)) > 0 else 'Data integrety error'}", True)
             return False if returnAll is None else None if returnAll is False else []
     
     

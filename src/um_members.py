@@ -12,7 +12,7 @@ import logic.menus
 
 if __name__ == '__main__':
     
-    ## try:
+    try:
         # Generate encryption key
         if storage.encryption.initializeKeys():
             authentication.logging.log("Generate encryption keys", "This is done automatically if the keys do not exist yet") # Should be done only once
@@ -20,6 +20,6 @@ if __name__ == '__main__':
         # Run the main logic
         logic.menus.main.run()
 
-    ## except Exception as e:
+    except Exception as e:
         # Log any exceptions that may occur
-        ## authentication.logging.log("Exception occured", str(e), True)
+        authentication.logging.log("Exception occured", str(e), True)

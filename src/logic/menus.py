@@ -1,7 +1,7 @@
 # The main menu; the entry point into the application
 
 from logic.interface import Menu, MenuOption, RepositoryMenu
-from logic.actions import searchItem, createNewItem, changePassword, hashGeneratedPassword, resetPassword
+from logic.actions import searchItem, createNewItem, changePassword, hashGeneratedPassword, resetPassword, createBackup, restoreBackup, extractBackupLogs
 import authentication.user
 import storage.encryption
 import storage.repositories
@@ -58,10 +58,18 @@ members = Menu("Manage members", [
 
 # System menu options
 system = Menu("System maintenance", [
-    MenuOption("Backup or Restore", lambda: print("## NOT IMPLEMENTED"), "super"),
+    MenuOption("Backup or Restore", lambda: backups.run(), "admin"),
     MenuOption("View system logs", lambda: repositoryMenu("View system logs", logsRepository), logsRepository.readRole(None, None)),
     MenuOption("View new suspicious logs", lambda: repositoryMenu("View new suspicious logs", suspiciousLogsRepository, True), suspiciousLogsRepository.readRole(None, None)),
     MenuOption("Search the logs", lambda: repositorySearch("Search the logs", logsRepository), logsRepository.readRole(None, None)),
+    MenuOption("Back to Main Menu", lambda: True),
+])
+
+# Backup menu options
+backups = Menu("Backup or Restore", [
+    MenuOption("Create a system backup", createBackup, "admin"),
+    MenuOption("Restore a database backup", restoreBackup, "admin"),
+    MenuOption("View backed up logs", lambda: backupLogsRepository(), "admin"),
     MenuOption("Back to Main Menu", lambda: True),
 ])
 
@@ -70,3 +78,4 @@ repositoryMenu = lambda title, repository, deleteWhenViewed = False, extraItemOp
 repositorySearch = lambda title, repository, deleteWhenViewed = False, extraItemOptions = None: searchItem(title, RepositoryMenu(title, repository, deleteWhenViewed, extraItemOptions))
 repositoryInsert = lambda title, repository, defaults = None, runAfter = lambda _: None: createNewItem(title, repository, defaults, runAfter)
 resetUserPassword = lambda id, model: [MenuOption("Reset password (generate temporary password)", lambda: resetPassword(id, model), usersRepository.updateRole(id, model))]
+backupLogsRepository = lambda: extractBackupLogs(lambda title, file: repositoryMenu(title, storage.repositories.Logs(file)))
