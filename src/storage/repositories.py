@@ -33,7 +33,7 @@ class Users(storage.abstract.FileRepository):
     def readRole(self, id, item):
         return "admin"
     def updateRole(self, id, item):
-        return "admin" if item["role"].upper() == "CONSULTANT" else "super"
+        return "consult" if authentication.user.name() == id else "admin" if item["role"].upper() == "CONSULTANT" else "super" # Users can edit their own profile
     def deleteRole(self, id, item):
         return "none" if authentication.user.name() == id else "admin" if item["role"].upper() == "CONSULTANT" else "super" # No one can delete their own profile
     def insertRole(self):

@@ -21,23 +21,28 @@ def name():
     return currentUser.name if currentUser is not None else None
 
 
-def role():
-    """Get the current role"""
-    return currentUser.role if currentUser is not None and not currentUser.unauthorized() else None
-
-
 def loggedIn():
     """Return if user is correctly logged in"""
     return currentUser is not None and not currentUser.unauthorized()
 
 
+def role():
+    """Get the current role if the user is logged in"""
+    return currentUser.role if loggedIn() else None
+
+
+def model():
+    """Return the user model (profile fields) if the user is logged in"""
+    return currentUser.model if loggedIn() else None
+
+
 def checkPassword(password, user = None):
-    """Check if the password is correct for the given user"""
-    if user is None and loggedIn():
-        user = currentUser.model
+    """Check if the password is correct for the current or given user"""
+    if user is None:
+        user = model()
     if user is None:
         return False
-    return storage.encryption.checkDataHash(password, currentUser.model["password"])
+    return storage.encryption.checkDataHash(password, user["password"])
 
 
 def login():
@@ -74,12 +79,13 @@ def login():
         else:
             # Find the user in the Users repository
             foundUser = usersRepository.readInternal(currentUser.name, False)
-
+            print("## FOUND USER", foundUser)
             if foundUser is not None:
                 foundAdmin = foundUser["role"].upper() == "ADMINISTRATOR"
                 currentUser.model = foundUser
                 if checkPassword(result["password"], foundUser):
                     # Password is correct, create the correct User class
+                    print("## CURRENT USER MODEL", currentUser.model)
                     if foundAdmin:
                         currentUser = authentication.roles.Administrator(currentUser.name, currentUser.model)
                     else:
