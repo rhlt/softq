@@ -22,11 +22,14 @@ containsLowercase = lambda name: (f"{name} should contain at least one lowercase
 containsUppercase = lambda name: (f"{name} should contain at least one uppercase letter", lambda s: re.search(r"[A-Z]", s))
 containsDigit = lambda name: (f"{name} should contain at least one digit", lambda s: re.search(r"\d", s))
 containsSpecial = lambda name: (f"{name} should contain at least one special character", lambda s: re.search(r"[^A-Za-z\d]", s))
+usernameRules = [atLeastThisLong(8), noLongerThan(10), startWithLetterOrUnderscore, validUsernameCharacters]
+passwordRules = [atLeastThisLong(12), noLongerThan(30), containsLowercase, containsUppercase, containsDigit, containsSpecial]
 
 # Member ID rules
 tenDigits = lambda name: (f"{name} should be ten digits", lambda s: re.search(r"^\d{10}$", s))
 twoDigitYear = lambda name: (f"{name} should start with a two-digit year that is not in the future", lambda s: validation.datetime.validShortYear(s[:2]))
 checksum = lambda name: (f"{name} should have a valid checksum", lambda s: str(reduce(lambda check, digit: (check + ord(digit) - 8) % 10, s[:9], 0)) == s[9:])
+memberIDRules = [tenDigits, twoDigitYear, checksum]
 
 # Profile fields rules
 date = lambda name: (f"{name} should be a valid date (YYYY-MM-DD)", validation.datetime.validDate)

@@ -1,7 +1,7 @@
 # The main menu; the entry point into the application
 
 from logic.interface import Menu, MenuOption, RepositoryMenu
-from logic.actions import changePassword, createNewItem
+from logic.actions import changePassword, createNewItem, hashGeneratedPassword, resetPassword
 import authentication.user
 import storage.encryption
 import storage.repositories
@@ -29,19 +29,13 @@ def mainMenuAction():
     print() # newline
 
 
-def hashPassword(model):
-    # Hash a generated password
-    password = model["password"]
-    print("Generated temporary password: " + password)
-    model["password"] = storage.encryption.hashDataWithSalt(password)
-
 # Main menu options
 main = Menu("Welcome to the Member Management System", [
     MenuOption("Change your password", changePassword, "nothardcoded"),
-    MenuOption("List users and roles", lambda: repositoryMenu("User overview", usersRepository).run(), usersRepository.readRole(None, None)),
-    MenuOption("Create a new consultant", lambda: repositoryInsert("Create a new consultant", usersRepository, { "registrationDate": validation.datetime.date(), "password": storage.encryption.tempPassword(), "role": "Consultant" }, hashPassword), usersRepository.insertRole()),
-    MenuOption("Create a new administrator", lambda: repositoryInsert("Create a new administrator", usersRepository, { "registrationDate": validation.datetime.date(),"password": storage.encryption.tempPassword(), "role": "Administrator" }, hashPassword), "super"),
-    MenuOption("Backup or Restore", lambda: print("## NOT IMPLEMENTED")),
+    MenuOption("List users and roles", lambda: repositoryMenu("User overview", usersRepository, False, resetUserPassword).run(), usersRepository.readRole(None, None)),
+    MenuOption("Create a new consultant", lambda: repositoryInsert("Create a new consultant", usersRepository, { "registrationDate": validation.datetime.date(), "password": storage.encryption.tempPassword(), "role": "Consultant" }, hashGeneratedPassword), usersRepository.insertRole()),
+    MenuOption("Create a new administrator", lambda: repositoryInsert("Create a new administrator", usersRepository, { "registrationDate": validation.datetime.date(),"password": storage.encryption.tempPassword(), "role": "Administrator" }, hashGeneratedPassword), "super"),
+    MenuOption("Backup or Restore", lambda: print("## NOT IMPLEMENTED"), "super"),
     MenuOption("View system logs", lambda: repositoryMenu("View system logs", logsRepository).run(), logsRepository.readRole(None, None)),
     MenuOption("View new suspicious logs", lambda: repositoryMenu("View new suspicious logs", suspiciousLogsRepository, True).run(), suspiciousLogsRepository.readRole(None, None)),
     MenuOption("Add new member", lambda: repositoryInsert("Add new member", membersRepository, { "registrationDate": validation.datetime.date() }), membersRepository.insertRole()),
@@ -51,5 +45,6 @@ main = Menu("Welcome to the Member Management System", [
 ], mainMenuAction)
 
 # Lambdas to generate a repository menu interface
-repositoryMenu = lambda title, repository, deleteWhenViewed = False: RepositoryMenu(title, repository, deleteWhenViewed)
+repositoryMenu = lambda title, repository, deleteWhenViewed = False, extraItemOptions = None: RepositoryMenu(title, repository, deleteWhenViewed, extraItemOptions)
 repositoryInsert = lambda title, repository, defaults = None, runAfter = lambda _: None: createNewItem(title, repository, defaults, runAfter)
+resetUserPassword = lambda id, model: [MenuOption("Reset password (generate temporary password)", lambda: resetPassword(id, model))]

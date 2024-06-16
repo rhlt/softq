@@ -5,6 +5,8 @@ import authentication.logging
 import authentication.roles
 import storage.encryption
 import storage.repositories
+import validation.fields
+import validation.rules
 import validation.forms
 
 # Initialization
@@ -79,17 +81,20 @@ def login():
         else:
             # Find the user in the Users repository
             foundUser = usersRepository.readInternal(currentUser.name, False)
-            print("## FOUND USER", foundUser)
             if foundUser is not None:
                 foundAdmin = foundUser["role"].upper() == "ADMINISTRATOR"
                 currentUser.model = foundUser
                 if checkPassword(result["password"], foundUser):
                     # Password is correct, create the correct User class
-                    print("## CURRENT USER MODEL", currentUser.model)
                     if foundAdmin:
-                        currentUser = authentication.roles.Administrator(currentUser.name, currentUser.model)
+                        currentUser = authentication.roles.Administrator(currentUser.model["username"], currentUser.model)
                     else:
-                        currentUser = authentication.roles.Consultant(currentUser.name, currentUser.model)
+                        currentUser = authentication.roles.Consultant(currentUser.model["username"], currentUser.model)
+                    if not validation.fields.Text("Login password", validation.rules.passwordRules).validate(result["password"], False, False):
+                        # Password does not conform to current password rules, require user to set a new one (except hard-coded users)
+                        if currentUser.can("nothardcoded") and not changePassword(result["password"]):
+                            # Canceled: force log out
+                            return False
 
         if currentUser.unauthorized():
             # Not logged in correctly
@@ -119,6 +124,44 @@ def login():
     except:
         # Not a problem if file does not exist because there have been no incorrect login attempts
         pass
+    return True
+
+
+def changePassword(currentPassword = None):
+    """Let a user change their password"""
+    global currentUser
+
+    if not loggedIn():
+        return
+
+    if currentPassword is None:
+        print("Change your password")
+        print("*" * len("Change your password"))    
+        # User will be asked for current password first
+        result = validation.forms.ChangePassword().run()
+    else:
+        # Automatically fill in current password if we came here immediately after login
+        print("Your password has expired. Please choose a new password:")
+        result = validation.forms.ChangePassword().run({ "currentPassword": currentPassword }, ["currentPassword"])
+
+    if result is None:
+        return # Canceled
+    
+    repository = storage.repositories.Users()
+    if currentUser.model is None or not authentication.user.checkPassword(result["currentPassword"]):
+        authentication.logging.log("Change password failed", f"Incorrect current password entered.")
+        print(":: The current password is not correct")
+    elif currentUser.model is not None:
+        # Replace the password hash in the user model
+        currentUser.model["password"] = storage.encryption.hashDataWithSalt(result["newPassword"])
+        if repository.update(currentUser.name, currentUser.model):
+            # Update was successful
+            authentication.logging.log("Password changed", f"User has manually changed password")
+            print(f"Your password has been changed")
+        else:
+            # Update was not successful (?)
+            print(f"Failed to change your password (please check the logs)")
+    validation.fields.EmptyValue(f"Press enter to continue").run()
     return True
 
 

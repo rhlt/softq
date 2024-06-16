@@ -125,14 +125,7 @@ class ChangePassword(Form):
         self.name = "Change password"
         self.fields = {
             "currentPassword": validation.fields.Text("Current password"),
-            "newPassword": validation.fields.Text("New password", [
-                validation.rules.atLeastThisLong(12),
-                validation.rules.noLongerThan(30),
-                validation.rules.containsLowercase,
-                validation.rules.containsUppercase,
-                validation.rules.containsDigit,
-                validation.rules.containsSpecial,
-            ]),
+            "newPassword": validation.fields.Text("New password", validation.rules.passwordRules),
         }
 
 
@@ -142,12 +135,7 @@ class User(Form):
     def __init__(self):
         self.name = "User"
         self.fields = {
-            "username": validation.fields.Text("Username", [
-                validation.rules.atLeastThisLong(8),
-                validation.rules.noLongerThan(10),
-                validation.rules.startWithLetterOrUnderscore,
-                validation.rules.validUsernameCharacters,
-            ]),
+            "username": validation.fields.Text("Username", validation.rules.usernameRules),
             "password": validation.fields.Hidden("Password"),
             "firstName": validation.fields.Text("First name"),
             "lastName": validation.fields.Text("Last name"),
@@ -187,7 +175,7 @@ class Member(Form):
     def __init__(self):
         self.name = "Member"
         self.fields = {
-            "id": validation.fields.Text("ID", [validation.rules.tenDigits, validation.rules.twoDigitYear, validation.rules.checksum]),
+            "id": validation.fields.Text("ID", validation.rules.memberIDRules),
             "firstName": validation.fields.Text("First name"),
             "lastName": validation.fields.Text("Last name"),
             "age": validation.fields.Number("Age", [validation.rules.age, validation.rules.realisticAge]),

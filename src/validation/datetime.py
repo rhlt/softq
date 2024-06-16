@@ -1,4 +1,4 @@
-# Helper functions to validate date/time values (since try/except doesn't work with lambdas)
+# Helper functions to generate and validate date/time values (since try/except doesn't work with lambdas)
 
 from datetime import datetime
 

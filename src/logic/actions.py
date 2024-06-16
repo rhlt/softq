@@ -14,36 +14,7 @@ def changePassword(currentPassword = None):
     print() # newline
     if not authentication.user.requireAccess("nothardcoded", "Change password", "Illegal attempt to change own password", True):
         return
-    
-    if currentPassword is None:
-        print("Change your password")
-        print("*" * len("Change your password"))    
-        # User will be asked for current password first
-        result = validation.forms.ChangePassword().run()
-    else:
-        # Automatically fill in current password if we came here immediately after login
-        print("Your password has expired. Please choose a new password:")
-        result = validation.forms.ChangePassword().run({ "currentPassword": currentPassword }, ["currentPassword"])
-
-    if result is None:
-        return # Canceled
-    
-    repository = storage.repositories.Users()
-    username = authentication.user.name()
-    model = authentication.user.model()
-    if model is None or not authentication.user.checkPassword(result["currentPassword"]):
-        print("# INCORRECT PASSWORD ON CHANGE", model, result["currentPassword"])
-        print(":: The current password is not correct")
-    elif model is not None:
-        # Replace the password hash in the user model
-        model["password"] = storage.encryption.hashDataWithSalt(result["newPassword"])
-        if repository.update(username, model):
-            # Update was successful
-            print(f"Your password has been changed")
-        else:
-            # Update was not successful (?)
-            print(f"Failed to change your password (please check the logs)")
-    validation.fields.EmptyValue(f"Press enter to continue").run()
+    authentication.user.changePassword()
 
 
 def createNewItem(title, repository, fixedValues = None, runAfter = lambda _: None):
@@ -59,8 +30,6 @@ def createNewItem(title, repository, fixedValues = None, runAfter = lambda _: No
         fixedValues = {}
     
     model = repository.form.run(fixedValues, fixedValues.keys())
-    print("## MODEL", model)
-
     if model is None:
         return # Canceled
     
@@ -77,3 +46,28 @@ def createNewItem(title, repository, fixedValues = None, runAfter = lambda _: No
         # Insertion was not successful (?)
         print(f"Failed to add {repository.form.name} (please check the logs)")
     validation.fields.EmptyValue(f"Press enter to go back").run()
+
+
+def hashGeneratedPassword(model):
+    """Hash a generated model password"""
+    password = model["password"]
+    print("Generated a temporary password: " + password)
+    authentication.logging.log("Generated temporary password", f"User: {model['username']}")
+    model["password"] = storage.encryption.hashDataWithSalt(password)
+
+
+def resetPassword(id, model):
+    """Reset a user's password (generates a temporary password)"""
+    result = validation.fields.Text(f"Are you sure you want to reset the password for {model['username']}? (Y/N)", [validation.rules.valueInList(["Y", "N"])]).run()
+    if result is None or result.upper() != "Y":
+        return
+    model["password"] = storage.encryption.tempPassword()
+    hashGeneratedPassword(model) # Hashes newly generated password and shows it on screen
+    repository = storage.repositories.Users()
+    if repository.update(id, model):
+        # Update was successful
+        print(f"The password has been reset")
+    else:
+        # Update was not successful (?)
+        print(f"Failed to reset the password (please check the logs)")
+    validation.fields.EmptyValue(f"Press enter to continue").run()

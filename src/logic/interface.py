@@ -22,6 +22,7 @@ class Menu:
         self.fieldName = "Option"
         self.extraAction = extraAction
         self.optionSeparator = ": "
+        self.rekey = False # If True, key by re-generated number to prevent holes
 
 
     def run(self):
@@ -39,21 +40,28 @@ class Menu:
         print(self.description)
 
         if isinstance(self.options, list):
+            self.rekey = True 
             self.options = dict(zip([str(n) for n in range(1, len(self.options) + 1)], self.options)) # List to dictionary with numbered keys ("1", "2", "3", ...)
         optionsAvailable = []
         optionLength = 0
+        n = 0
+        parsedOptions = {}
         for option in self.options:
             if self.options[option].role is not None and not authentication.user.hasRole(self.options[option].role):
                 # Only show menu items the user is supposed to see
                 continue
-            optionLength = len(option) if optionLength < len(option) else optionLength
-            optionsAvailable.append(option)
+            n += 1
+            parsedOption = str(n) if self.rekey else option
+            optionLength = len(parsedOption) if optionLength < len(parsedOption) else optionLength
+            optionsAvailable.append(parsedOption)
+            parsedOptions[parsedOption.upper()] = option # Keep original
 
         if len(optionsAvailable) > 0:
             # Generate a field from the list of options
             optionField = validation.fields.FromList(self.fieldName, optionsAvailable + [""])
             for option in optionsAvailable:
-                print(f"  {option.ljust(optionLength)}{self.optionSeparator}{self.options[option].title}")
+                print(f"  {option.ljust(optionLength)}{self.optionSeparator}{self.options[parsedOptions[option.upper()]].title}")
+
             print() # newline
         else:
             # There are no options, or none are accessible to the current user
@@ -68,7 +76,10 @@ class Menu:
 
         if len(choice) > 0:
             # Run the chosen action
-            cancel = self.options[choice].action()
+            if choice.upper() not in parsedOptions:
+                print("## PARSED OPTIONS MISMATCH?")
+                return
+            cancel = self.options[parsedOptions[choice.upper()]].action()
         else:
             cancel = self.noInput()
         if cancel is None and not optionsAvailable or cancel:
@@ -85,7 +96,7 @@ class Menu:
 class RepositoryMenu(Menu):
     """Class that lists items in the repository"""
 
-    def __init__(self, title, repository, deleteWhenViewed = False):
+    def __init__(self, title, repository, deleteWhenViewed = False, extraItemOptions = None):
         """Initialize by generating menu option from repository items"""
         self.repository = repository
         self.title = title
@@ -95,8 +106,10 @@ class RepositoryMenu(Menu):
         self.offset = 0
         self.limit = 20
         self.deleteWhenViewed = deleteWhenViewed # Repositories that need to be deleted when viewed
+        self.extraItemOptions = extraItemOptions # lambda id, item that should return a list of extra menu options to be shown when viewing an item
         self.extraAction = None
         self.optionSeparator = " | "
+        self.rekey = False
 
 
     def run(self):
@@ -113,7 +126,6 @@ class RepositoryMenu(Menu):
             self.description = "You've reached the end of the data. Press enter to view the first page or press Ctrl+C to cancel" if self.offset > 0 else "There is nothing to display"
             return
 
-
         menuOptions = map(lambda id: MenuOption(self.repository.form.row(items[id]), lambda: self.viewItem(id), self.repository.readRole(id, items[id])), items)
         self.options = dict(zip([str(id) for id in items.keys()], menuOptions))
         self.description = f"Showing items {self.offset+1}-{self.offset+self.limit}\nPlease type the {self.fieldLabel} to view or press Ctrl+C to cancel"
@@ -124,7 +136,10 @@ class RepositoryMenu(Menu):
     
     def viewItem(self, id):
         """View the item that was selected"""
-        RepositoryItem(f"{self.repository.form.name}: {id}", self.repository, id, self.deleteWhenViewed).run()
+        extraOptions = None
+        if isinstance(self.extraItemOptions, type(lambda: None)):
+            extraOptions = self.extraItemOptions
+        RepositoryItem(f"{self.repository.form.name}: {id}", self.repository, id, self.deleteWhenViewed, extraOptions).run()
 
 
     def noInput(self):
@@ -141,7 +156,7 @@ class RepositoryMenu(Menu):
 class RepositoryItem(Menu):
     """Class that shows an item in the repository and allows the user to select an action"""
 
-    def __init__(self, title, repository, id, deleteWhenViewed = False):
+    def __init__(self, title, repository, id, deleteWhenViewed = False, extraOptions = None):
         """Initialize by generating menu option from repository items"""
         self.id = id
         self.item = None
@@ -151,6 +166,7 @@ class RepositoryItem(Menu):
         self.description = f"Please select an action to perform or press Ctrl+C to cancel"
         self.fieldName = "Action"
         self.deleteWhenViewed = deleteWhenViewed
+        self.extraOptions = extraOptions # lambda id, item that should return a list of extra menu options to be shown for the item
         self.extraAction = lambda: self.repository.form.display(self.item)
         self.optionSeparator = ": "
 
@@ -204,6 +220,11 @@ class RepositoryItem(Menu):
                 MenuOption(f"Mark as viewed", lambda: self.repository.delete(self.id), self.repository.deleteRole(self.id, self.item)),
                 MenuOption(f"Return without marking as viewed", lambda: True),
             ]
+        if isinstance(self.extraOptions, type(lambda: None)):
+            # Allow extra menu options to be added
+            extraOptions = self.extraOptions(self.id, self.item)
+            for option in extraOptions:
+                self.options.append(option)
 
     
     def run(self):
