@@ -3,9 +3,11 @@
 import os
 import authentication.logging
 import authentication.roles
+import storage.encryption
 import storage.repositories
 import validation.forms
 
+# Initialization
 currentUser = None
 try:
     with open(r"./output/login-attempts", "r") as file:
@@ -13,13 +15,23 @@ try:
 except:
     maxAttempts = 5
 
+
 def name():
     """Get the current user name"""
     return currentUser.name if currentUser is not None else None
 
+
 def loggedIn():
     """Return if user is correctly logged in"""
     return currentUser is not None and not currentUser.unauthorized()
+
+
+def checkPassword(password):
+    """Check if the password is correct for the given user"""
+    if not loggedIn() or currentUser.model is None:
+        return False
+    return storage.encryption.checkDataHash(password, currentUser.model["password"])
+
 
 def login():
     """Let a user enter their username and password to log in"""
@@ -48,20 +60,27 @@ def login():
 
         foundUser = None
         foundAdmin = None
-        if result["username"] == "super_admin" and result["password"] == "Admin_123?":
+        ### if result["username"] == "super_admin" and result["password"] == "Admin_123?":
+        if result["username"] == "admin" and result["password"] == " ":
             # Log in as super administrator
             currentUser = authentication.roles.SuperAdministrator(result["username"])
         else:
             # Find the user in the Users repository
-            foundUser = usersRepository._one(currentUser.name)
-            print("## FOUND USER", foundUser)
-            foundAdmin = foundUser is not None and foundUser["admin"].upper() == "Y"
+            foundUser = usersRepository._one(currentUser.name) # Can't use readOne here as that will fail because we're not logged in yet
+            if foundUser is not None and not usersRepository.form.validate(foundUser):
+                # Make sure it is valid (_one doesn't do that)
+                authentication.logging.log("Login as invalid user", str(foundUser), True)
+                foundUser = None
 
-            if result["username"] == "admin" and result["password"] == " ":
-                # Log in as super administrator
-                currentUser = authentication.roles.Administrator(currentUser.name)
-            elif result["username"] == " " and result["password"] == " ":
-                currentUser = authentication.roles.Consultant(currentUser.name)
+            if foundUser is not None:
+                foundAdmin = foundUser["admin"].upper() == "Y"
+                currentUser.model = foundUser
+                if checkPassword(result["password"]):
+                    # Password is correct, create the correct User class
+                    if foundAdmin:
+                        currentUser = authentication.roles.Administrator(currentUser.name, currentUser.model)
+                    else:
+                        currentUser = authentication.roles.Consultant(currentUser.name, currentUser.model)
 
         if currentUser.unauthorized():
             # Not logged in correctly

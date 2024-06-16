@@ -18,7 +18,7 @@ class Menu:
     def __init__(self, title, options, extraAction = None):
         self.title = title
         self.options = options
-        self.description = f"Please enter an option number:"
+        self.description = f"Please enter an option number or press Ctrl+C to cancel:"
         self.fieldName = "Option"
         self.extraAction = extraAction
         self.optionSeparator = ": "
@@ -203,7 +203,6 @@ class RepositoryItem(Menu):
                 MenuOption(f"Mark as viewed", lambda: self.repository.delete(self.id), self.repository.canDelete(self.id)),
                 MenuOption(f"Return without marking as viewed", lambda: True),
             ]
-
 
     
     def run(self):

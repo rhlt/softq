@@ -4,9 +4,10 @@
 class Unauthorized:
     """Basic unauthorized user class, this does not allow the user any access (might not be logged in with password!)"""
 
-    def __init__(self, name):
-        """Initialize user object with username"""
+    def __init__(self, name, model = None):
+        """Initialize user object with username and data model"""
         self.name = name
+        self.model = model
     
     def can(self, _):
         """Can't perform any actions"""
@@ -22,7 +23,7 @@ class Consultant(Unauthorized):
 
     def can(self, role):
         """Consultant can 'consult' and 'password' (=change their own password)"""
-        return super().can(role) or role == "consult" or role == "password"
+        return super().can(role) or role == "consult" or role == "nothardcoded"
 
 
 class Administrator(Consultant):
@@ -37,5 +38,5 @@ class SuperAdministrator(Administrator):
     """Super Administrator class"""
 
     def can(self, role):
-        """Super Administrator can 'super', 'admin' or 'consult', but not 'password' (since it is hard-coded)"""
-        return role != "password" and super().can(role) or role == "super"
+        """Super Administrator can 'super', 'admin' or 'consult', but not 'nothardcoded' (since it is hard-coded)"""
+        return role != "nothardcoded" and super().can(role) or role == "super"

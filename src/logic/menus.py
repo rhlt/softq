@@ -1,8 +1,9 @@
 # The main menu; the entry point into the application
 
 from logic.interface import Menu, MenuOption, RepositoryMenu
-from logic.actions import createNewItem
+from logic.actions import changePassword, createNewItem
 import authentication.user
+import storage.encryption
 import storage.repositories
 import validation.datetime
 
@@ -29,16 +30,16 @@ def mainMenuAction():
 
 # Main menu options
 main = Menu("Welcome to the Member Management System", [
-    # MenuOption("Change your password", logic.users.changePassword, "password"),
-    # MenuOption("List users and roles", lambda: repositoryMenu("User overview", usersRepository).run(), usersRepository.canRead(None)),
-    # MenuOption("Create a new user", lambda: repositoryInsert("Create a new user", usersRepository).run(), usersRepository.canInsert()),
+    MenuOption("Change your password", changePassword, "nothardcoded"),
     MenuOption("Add new member", lambda: repositoryInsert("Add new member", membersRepository, { "registrationDate": validation.datetime.date() }), membersRepository.canInsert()),
+    MenuOption("Search for a member", lambda: repositoryMenu("Search members", membersRepository).run(), membersRepository.canRead(None)),
     MenuOption("View all members", lambda: repositoryMenu("View all members", membersRepository).run(), membersRepository.canRead(None)),
-    MenuOption("Search members", lambda: repositoryMenu("Search members", membersRepository).run(), membersRepository.canRead(None)),
-    # MenuOption("Backup or Restore", lambda: None),
+    MenuOption("List users and roles", lambda: repositoryMenu("User overview", usersRepository).run(), usersRepository.canRead(None)),
+    MenuOption("Create a new user", lambda: repositoryInsert("Create a new user", usersRepository, { "password": storage.encryption.tempPassword() }), usersRepository.canInsert()),
+    MenuOption("Backup or Restore", lambda: print("NOT IMPLEMENTED")),
     MenuOption("View system logs", lambda: repositoryMenu("View system logs", logsRepository).run(), logsRepository.canRead(None)),
     MenuOption("View new suspicious logs", lambda: repositoryMenu("View new suspicious logs", suspiciousLogsRepository, True).run(), suspiciousLogsRepository.canRead(None)),
-    MenuOption("Log out (quit program)", lambda: True),
+    MenuOption("Log out (quit application)", lambda: True),
 ], mainMenuAction)
 
 # Lambdas to generate a repository menu interface

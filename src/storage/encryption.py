@@ -92,3 +92,9 @@ def decrypt(data):
     except Exception as e:
         print("## DECRYPT ERROR", str(e))
         return None # Corrupted
+    
+
+def tempPassword():
+    """Generate a temporary password: a password that does not validate (no special chars) and therefore forces a password change at next login"""
+    characters = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789"
+    return "".join([random.choice(characters) for _ in range(12)])

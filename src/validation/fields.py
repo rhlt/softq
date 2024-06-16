@@ -9,6 +9,7 @@ class Text:
         """Initialize values and set defaults"""
         self.name = str(name)
         self.errors = []
+        self.displayValues = {}
         # Never allow values longer than 100 characters or that contain control characters (ASCII < 32), including newline and NULL bytes
         self.rules = [validation.rules.notTooLong(self.name), validation.rules.noControlCharacters(self.name)]
         if not allowEmpty:
@@ -67,6 +68,8 @@ class Text:
     def displayValue(self, value, maxWidth = None):
         """Display the value"""
         value = str(value)
+        if value in self.displayValues:
+            value = self.displayValues[value]
         if maxWidth is not None:
             if len(value) > maxWidth and maxWidth > 5:
                 value = value[:maxWidth - 3] + "..."
@@ -105,7 +108,7 @@ class Number(Text):
 class FromList(Text):
     """Handle a text (string) value that must be one of a specified list of values"""
 
-    def __init__(self, name, allowedValues = []):
+    def __init__(self, name, allowedValues = [], displayValues = None):
         """Initialize input with custom rule to check if value is in the list of allowed values"""
         if not isinstance(allowedValues, list) or len(allowedValues) == 0:
             # If allowedValues is empty or invalid, make sure to allow value to be empty
@@ -113,6 +116,8 @@ class FromList(Text):
         super().__init__(name, [], "" in allowedValues)
         # Create custom rule for the list of allowed values
         self.rules.append(validation.rules.valueInList(allowedValues)(self.name))
+        if displayValues is not None and len(allowedValues) == len(displayValues):
+            self.displayValues = dict(zip(allowedValues, displayValues))
 
 
 class ReadOnly(Text):

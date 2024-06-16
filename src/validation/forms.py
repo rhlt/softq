@@ -147,7 +147,7 @@ class User(Form):
                 validation.rules.validUsernameCharacters,
             ]),
             "password": validation.fields.Hidden("Password"),
-            "admin": validation.fields.ReadOnly("Admin", [validation.rules.valueInList(["Y", "N"])])
+            "admin": validation.fields.FromList("Role", ["Y", "N"], ["Administrator", "Consultant"])
         }
 
 
@@ -193,7 +193,7 @@ class Log(Form):
             "username": validation.fields.Text("Username", None, True),
             "activity": validation.fields.Text("Activity"),
             "details": validation.fields.Text("Details"),
-            "suspicious": validation.fields.FromList("Suspicious", ["Y", "N"]),
+            "suspicious": validation.fields.FromList("Suspicious", ["Y", "N"], ["YES", "no"]),
         }
         self.columns = {
             "date": 12,
