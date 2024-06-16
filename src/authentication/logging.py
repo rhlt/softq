@@ -37,7 +37,6 @@ def log(activity, details, suspicious = False):
     # print("## LOG", data)
     data = { field: storage.encryption.encrypt(value) for field, value in data.items() }
     line = json.dumps(data) + "\n"
-    print("## LOG", line + "\n")
     with open("./output/logs", "a") as file:
         file.write(line)
     if suspicious:
