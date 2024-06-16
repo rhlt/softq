@@ -10,7 +10,7 @@ class Text:
         self.name = str(name)
         self.errors = []
         self.displayValues = {}
-        # Never allow values longer than 100 characters or that contain control characters (ASCII < 32), including newline and NULL bytes
+        # Never allow values longer than 1000 characters or that contain control characters (ASCII < 32), including newline and NULL bytes
         self.rules = [validation.rules.notTooLong(self.name), validation.rules.noControlCharacters(self.name)]
         if not allowEmpty:
             # Add the rule that input must not be empty

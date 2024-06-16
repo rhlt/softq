@@ -274,7 +274,7 @@ class FileRepository(Repository):
                     model = { field: storage.encryption.decrypt(value) for field, value in model.items() }
                 except:
                     # Invalid JSON or decryption failed
-                    authentication.logging.log("Data parsing", "Raw data: " + str(line), True)
+                    authentication.logging.log("Data parsing error", "Raw data: " + str(line), True)
                     continue
                 if search is not None:
                     # Check if the search parameter is found in any of the fields
@@ -324,7 +324,7 @@ class FileRepository(Repository):
                     model = { field: storage.encryption.decrypt(value) for field, value in model.items() }
                 except:
                     # Invalid JSON or decryption failed
-                    authentication.logging.log("Data parsing", "Raw data: " + str(line), True)
+                    authentication.logging.log("Data parsing error", "Raw data: " + str(line), True)
                     continue
                 if self.idField is None:
                     # We've found it (by line number)
@@ -388,7 +388,7 @@ class FileRepository(Repository):
                     lineModel = { field: storage.encryption.decrypt(value) for field, value in lineModel.items() }
                 except:
                     # Invalid JSON or decryption failed
-                    authentication.logging.log("Data parsing", "Raw data: " + str(line), True)
+                    authentication.logging.log("Data parsing error", "Raw data: " + str(line), True)
                     continue
                 if self.idField is None or (self.idField in lineModel and lineModel[self.idField] == id):
                     # We've found it: don't keep this line but save the new content
@@ -446,7 +446,7 @@ class FileRepository(Repository):
                     lineModel = { field: storage.encryption.decrypt(value) for field, value in lineModel.items() }
                 except:
                     # Invalid JSON or decryption failed
-                    authentication.logging.log("Data parsing", "Raw data: " + str(line), True)
+                    authentication.logging.log("Data parsing error", "Raw data: " + str(line), True)
                     continue
                 if self.idField is None or (self.idField in lineModel and lineModel[self.idField] == id):
                     # We've found it: remove (don't keep) this line and skip to the next
