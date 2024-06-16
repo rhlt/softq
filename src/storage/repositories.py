@@ -3,13 +3,14 @@ import authentication.user
 import storage.abstract
 
 
-class Members(storage.abstract.FileRepository):
+class Members(storage.abstract.SQLiteRepository):
     """Users repository class"""
 
     def __init__(self):
-        super().__init__("./output/members")
+        super().__init__("./output/database")
         self.form = validation.forms.Member() # User form with all fields
         self.idField = "id"
+        self._initialize()
     
     def readRole(self, id, item):
         return "consult"
@@ -21,14 +22,15 @@ class Members(storage.abstract.FileRepository):
         return "consult"
     
 
-class Users(storage.abstract.FileRepository):
+class Users(storage.abstract.SQLiteRepository):
     """Users repository class"""
 
     def __init__(self):
-        super().__init__("./output/users")
+        super().__init__("./output/database")
         self.form = validation.forms.User() # User form with all fields
-        # self.editForm = lambda item: validation.forms.User() if authentication.user.hasRole("super") else validation.forms.Consultant() if item["role"] == "CONSULTANT" else validation.forms.Administrator()
+        self.editForm = lambda item: validation.forms.User() if authentication.user.hasRole("super") else validation.forms.Consultant() if item["role"] == "CONSULTANT" else validation.forms.Administrator()
         self.idField = "username"
+        self._initialize()
     
     def readRole(self, id, item):
         return "admin"

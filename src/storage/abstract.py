@@ -10,6 +10,7 @@ import storage.encryption
 import json
 import os
 import re
+import sqlite3
 
 class Repository:
     """Abstract repository class"""
@@ -468,3 +469,130 @@ class FileRepository(Repository):
         except Exception as e:
             authentication.logging.log(f"Error reading or writing file", f"File: {self.path}, Error: {str(e)}", True)
             return False
+        
+
+class SQLiteRepository(Repository):
+    """Repository class that represents an SQLite database"""
+
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
+        self.nextOffset = 0
+        self.table = None
+        self.initialized = False
+
+
+    def _safeName(self, value):
+        """Generate a SQL safe table or column name ("Suspicious Logs" > "suspicious_logs")"""
+        oldValue = value
+        value = re.sub(r'[^a-zA-Z0-9]', "_", value).lower()
+        if len(value) == 0:
+            # If value contains nothing useful, fall back to using a hash of the original value
+            value = storage.encryption.hashData(oldValue)
+        if value[0] in "0123456789":
+            # Make sure it doesn't start with a number (add a _ in front if it does)
+            value = "_" + value
+        return value
+    
+
+    def _query(self, query, params = (), returnAll = None, encryptParams = True):
+        """Perform a database query"""
+        if not self.initialized:
+            authentication.logging.log(f"Querying uninitialized database", f"File: {self.path}, Query: {query}, Parameters: {str(params)}, Error: {str(e)}", True)
+            return False # Not yet initialized
+        try:
+            params = tuple(map(storage.encryption.encrypt, params))
+            with sqlite3.connect(self.path) as sql:
+                cursor = sql.cursor()
+                cursor.execute(query, params)
+                sql.commit()
+                authentication.logging.log(f"Query {self.table}", f"File: {self.path}, Query: {query}, Parameters: {str(params)}")
+            if returnAll is not None:
+                # Return the result if parameter returnAll is set to True [all] or False [one], but not None
+                if returnAll:
+                    results = cursor.fetchall()
+                    if results is False:
+                        # No results
+                        return []
+                    return [tuple(map(storage.encryption.decrypt, result)) for result in results]
+                else:
+                    result = cursor.fetchone()
+                    if results is False:
+                        # No result
+                        return None
+                    return tuple(map(storage.encryption.decrypt, result))
+            return True
+        except Exception as e:
+            authentication.logging.log(f"Error querying database", f"File: {self.path}, Query: {query}, Parameters: {str(params)}, Error: {str(e) if len(str(e)) > 0 else 'Data integrety error'}", True)
+            return False if returnAll is None else None if returnAll is False else []
+    
+    
+    def _fields(self, suffix = None):
+        """Return the fields as a string for use in a query: 'field1, field2, field3', possibly with a suffix: 'field1 TEXT, field2 TEXT, field3 TEXT'"""
+        return ", ".join([self._safeName(field) + ("" if suffix is None else " " + suffix) for field in self.form.fields])
+
+
+    def _initialize(self):
+        """Initialize the database table with the correct fields"""
+        if self.initialized:
+            return # Already initialized
+        self.table = self._safeName(self.form.name)
+        if self.idField is None:
+            authentication.logging.log("Error initializing database", f"Repository {self.name} does not have ID Field")
+            return
+        fieldList = self._fields("TEXT")
+        self.initialized = True
+        self._query(f"CREATE TABLE IF NOT EXISTS {self.table} ({fieldList})")
+
+
+    def _list(self, offset, limit, search = None):
+        """List all items in the repository (from offset X with a limit of Y and a possible search parameter)"""
+        
+        # Ensure even offset and limit are safe (digits only)
+        if not re.search(r'^\d+$', str(offset)) or not re.search(r'^\d+$', str(limit)):
+            return None
+        
+
+        ### IF SEARCH...
+        
+        results = self._query(f"SELECT {self._fields()} FROM {self.table} LIMIT {limit} OFFSET {offset}", (), True)
+        count = len(results)
+        self.nextOffset = offset + count
+
+        keyedResults = {}
+        fields = list(self.form.fields.keys())
+        for result in results:
+            # Loop through the results to key them correctly
+            parsedResult = dict(zip(fields, result)) 
+            if self.idField is not None and self.idField in parsedResult:
+                keyedResults[parsedResult[self.idField]] = parsedResult
+            else:
+                authentication.logging.log(f"Read invalid data in {self.name}", f"Field '{self.idField}'): Missing ID-field", True)
+                continue
+        return keyedResults
+
+
+    def _one(self, id):
+        """Get one item in the repository (by id)"""
+        if self.idField is not None:
+            result = self._query(f"SELECT {self._fields()} FROM {self.table} WHERE {self._safeName(self.idField)} = ? LIMIT 1", (id,), False)
+            fields = list(self.form.fields.keys())
+            return dict(zip(fields, result)) 
+        
+
+    def _add(self, model):
+        """Insert a new row into the database"""
+        placeholders = ", ".join("?" for _ in self.form.fields)
+        return self._query(f"INSERT INTO {self.table} ({self._fields()}) VALUES ({placeholders})", tuple(model.values()))
+
+
+    def _replace(self, id, model):
+        """Replace/update a row in the database (by id)"""
+        if self.idField is not None:
+            return self._query(f'UPDATE {self.table} SET {self._fields("= ?")} WHERE {self._safeName(self.idField)} = ?', tuple(model.values()) + (id,))
+        
+
+    def _remove(self, id):
+        """Remove a row from the database (by id)"""
+        if self.idField is not None:
+            return self._query(f"DELETE FROM {self.table} WHERE {self._safeName(self.idField)} = ? LIMIT 1", (id,), False)

@@ -66,7 +66,6 @@ def initializeKeys():
         if not os.path.isdir('./output') or not os.access('./', os.R_OK) or not os.access('./', os.W_OK):
             print("Please make sure the working directory and all required files and subfolders are accessible to the application")
             exit()
-            # raise OSError("Failed to access or create the required files in the working directory")
         key = Fernet.generate_key()
         with open("./output/.key", "wb") as file:
             file.write(key)
@@ -78,21 +77,19 @@ def initializeKeys():
 def encrypt(data):
     """Symmetrically encrypt data"""
     global encryptor
-    # return data ## FOR TESTING
     data = str(data)
+    if encryptor is None:
+        initializeKeys()
     return encryptor.encrypt(data.encode("utf-8")).decode("utf-8")
 
 
 def decrypt(data):
     """Symmetrically decrypt data"""
     global encryptor
-    # return data ## FOR TESTING
-    try:
-        return encryptor.decrypt(data.encode("utf-8")).decode("utf-8")
-    except Exception as e:
-        print("## DECRYPT ERROR", str(e))
-        return None # Corrupted
-    
+    if encryptor is None:
+        initializeKeys()
+    return encryptor.decrypt(data.encode("utf-8")).decode("utf-8")    
+
 
 def tempPassword():
     """Generate a temporary password: a password that does not validate (no special chars) and therefore forces a password change at next login"""
