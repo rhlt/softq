@@ -48,6 +48,21 @@ def createNewItem(title, repository, fixedValues = None, runAfter = lambda _: No
     validation.fields.EmptyValue(f"Press enter to go back").run()
 
 
+def searchItem(title, repositoryMenu):
+    """Search an item in a repository menu"""
+    
+    print() # newline
+    print(title)
+    print("*" * len(title))
+
+    search = validation.fields.Text(f"Search term").run()
+    if search is None:
+        return
+    
+    repositoryMenu.search = search
+    return repositoryMenu.run()
+
+
 def hashGeneratedPassword(model):
     """Hash a generated model password"""
     password = model["password"]

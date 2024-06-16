@@ -81,7 +81,10 @@ class Repository:
         if not authentication.user.requireAccess(self.readRole(None, None), f"Unauthorized read of all {self.name}", f"Offset: {offset}, Limit: {limit}, Search: {search}", True):
             return None # User has no access
         
-        authentication.logging.log(f"Read all {self.name}", f"Offset: {offset}, Limit: {limit}")
+        if search is not None:
+            authentication.logging.log(f"Search {self.name}", f"Search: {search}, Offset: {offset}, Limit: {limit}")
+        else:
+            authentication.logging.log(f"Read all {self.name}", f"Offset: {offset}, Limit: {limit}")
         
         items = self._list(offset, limit, search)
 

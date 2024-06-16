@@ -1,7 +1,7 @@
 # The main menu; the entry point into the application
 
 from logic.interface import Menu, MenuOption, RepositoryMenu
-from logic.actions import changePassword, createNewItem, hashGeneratedPassword, resetPassword
+from logic.actions import searchItem, createNewItem, changePassword, hashGeneratedPassword, resetPassword
 import authentication.user
 import storage.encryption
 import storage.repositories
@@ -40,7 +40,8 @@ main = Menu("Welcome to the Member Management System", [
 
 # Users menu options
 users = Menu("Manage Users", [
-    MenuOption("List users and roles", lambda: repositoryMenu("User overview", usersRepository, False, resetUserPassword).run(), usersRepository.readRole(None, None)),
+    MenuOption("List users and roles", lambda: repositoryMenu("User overview", usersRepository, False, resetUserPassword), usersRepository.readRole(None, None)),
+    MenuOption("Search users", lambda: repositorySearch("Search users", usersRepository, False, resetUserPassword), usersRepository.readRole(None, None)),
     MenuOption("Create a new consultant", lambda: repositoryInsert("Create a new consultant", usersRepository, { "registrationDate": validation.datetime.date(), "password": storage.encryption.tempPassword(), "role": "Consultant" }, hashGeneratedPassword), usersRepository.insertRole()),
     MenuOption("Create a new administrator", lambda: repositoryInsert("Create a new administrator", usersRepository, { "registrationDate": validation.datetime.date(),"password": storage.encryption.tempPassword(), "role": "Administrator" }, hashGeneratedPassword), "super"),
     MenuOption("Back to Main Menu", lambda: True),
@@ -49,20 +50,22 @@ users = Menu("Manage Users", [
 # Members menu options
 members = Menu("Manage Members", [
     MenuOption("Add new member", lambda: repositoryInsert("Add new member", membersRepository, { "registrationDate": validation.datetime.date() }), membersRepository.insertRole()),
-    MenuOption("Search for a member", lambda: repositoryMenu("Search members", membersRepository).run(), membersRepository.readRole(None, None)),
-    MenuOption("View all members", lambda: repositoryMenu("View all members", membersRepository).run(), membersRepository.readRole(None, None)),
+    MenuOption("Search members", lambda: repositorySearch("Search members", membersRepository), membersRepository.readRole(None, None)),
+    MenuOption("View all members", lambda: repositoryMenu("View all members", membersRepository), membersRepository.readRole(None, None)),
     MenuOption("Back to Main Menu", lambda: True),
 ])
 
 # System menu options
 system = Menu("System Maintenance", [
     MenuOption("Backup or Restore", lambda: print("## NOT IMPLEMENTED"), "super"),
-    MenuOption("View system logs", lambda: repositoryMenu("View system logs", logsRepository).run(), logsRepository.readRole(None, None)),
-    MenuOption("View new suspicious logs", lambda: repositoryMenu("View new suspicious logs", suspiciousLogsRepository, True).run(), suspiciousLogsRepository.readRole(None, None)),
+    MenuOption("View system logs", lambda: repositoryMenu("View system logs", logsRepository), logsRepository.readRole(None, None)),
+    MenuOption("View new suspicious logs", lambda: repositoryMenu("View new suspicious logs", suspiciousLogsRepository, True), suspiciousLogsRepository.readRole(None, None)),
+    MenuOption("Search the logs", lambda: repositorySearch("Search the logs", logsRepository), logsRepository.readRole(None, None)),
     MenuOption("Back to Main Menu", lambda: True),
 ])
 
 # Lambdas to generate a repository menu interface
-repositoryMenu = lambda title, repository, deleteWhenViewed = False, extraItemOptions = None: RepositoryMenu(title, repository, deleteWhenViewed, extraItemOptions)
+repositoryMenu = lambda title, repository, deleteWhenViewed = False, extraItemOptions = None: RepositoryMenu(title, repository, deleteWhenViewed, extraItemOptions).run()
+repositorySearch = lambda title, repository, deleteWhenViewed = False, extraItemOptions = None: searchItem(title, RepositoryMenu(title, repository, deleteWhenViewed, extraItemOptions))
 repositoryInsert = lambda title, repository, defaults = None, runAfter = lambda _: None: createNewItem(title, repository, defaults, runAfter)
 resetUserPassword = lambda id, model: [MenuOption("Reset password (generate temporary password)", lambda: resetPassword(id, model))]

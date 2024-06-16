@@ -95,7 +95,7 @@ class Menu:
 class RepositoryMenu(Menu):
     """Class that lists items in the repository"""
 
-    def __init__(self, title, repository, deleteWhenViewed = False, extraItemOptions = None):
+    def __init__(self, title, repository, deleteWhenViewed = False, extraItemOptions = None, search = None):
         """Initialize by generating menu option from repository items"""
         self.repository = repository
         self.title = title
@@ -106,6 +106,7 @@ class RepositoryMenu(Menu):
         self.limit = 20
         self.deleteWhenViewed = deleteWhenViewed # Repositories that need to be deleted when viewed
         self.extraItemOptions = extraItemOptions # lambda id, item that should return a list of extra menu options to be shown when viewing an item
+        self.search = search # Search query
         self.extraAction = None
         self.optionSeparator = " | "
         self.rekey = False
@@ -119,15 +120,24 @@ class RepositoryMenu(Menu):
 
     def generateOptions(self):
         """Generate menu options for items"""
-        items = self.repository.readAll(self.offset, self.limit)
+        items = self.repository.readAll(self.offset, self.limit, self.search)
         if items is None or len(items) == 0:
             self.options = {}
-            self.description = "You've reached the end of the data. Press enter to view the first page or press Ctrl+C to cancel" if self.offset > 0 else "There is nothing to display"
+            if self.offset > 0:
+                self.description = "You've reached the end of the data. Press enter to view the first page or press Ctrl+C to cancel"
+            elif self.search is not None:
+                self.description = f"Nothing was found for '{self.search}'"
+            else:
+                self.description = "There is nothing to display"
             return
 
         menuOptions = map(lambda id: MenuOption(self.repository.form.row(items[id]), lambda: self.viewItem(id), self.repository.readRole(id, items[id])), items)
         self.options = dict(zip([str(id) for id in items.keys()], menuOptions))
-        self.description = f"Showing items from index {self.offset+1}\nPlease type the {self.fieldLabel} to view or press Ctrl+C to cancel"
+        if self.search:
+            self.description = f"Searching for '{self.search}'\n"
+        else:
+            self.description = f"Showing items from index {self.offset+1}\n"
+        self.description += f"Please type the {self.fieldLabel} to view or press Ctrl+C to cancel"
         padding = max(len(str(s)) for s in items.keys())
         idLabel = "  " + ("#" if self.repository.idField is None else self.fieldLabel).ljust(padding)[:padding]
         self.description += "\n\n" + self.repository.form.generateHeader(idLabel)
