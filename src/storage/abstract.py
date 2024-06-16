@@ -19,7 +19,8 @@ class Repository:
         self.editForm = lambda item: self.form # Allow overwriting the edit/update form based on the item
         self.name = re.sub(r'([a-z])([A-Z])', r"\1 \2", self.__class__.__name__) # ClassName with added spaces ("ClassName" => "Class Name")
         self.idField = None # Can be overwritten by subclass or kept to use Nth item
-    
+        self.nextOffset = 0
+
 
     # Default roles (all "none" unless overwritten by subclasses)
     def readRole(self, id):
@@ -40,9 +41,9 @@ class Repository:
         return value # Should return the value the field should be set to, or None if not permitted to be set/changed. The current values are available in model (which is None on insert)
 
     # Logic methods to be implemented by subclasses
-    def _list(self, offset, limit):
-        """Implement to list {limit} items starting from {offset}"""
-        pass
+    def _list(self, offset, limit, search = None):
+        """Implement to list {limit} items starting from {offset} with a possible {search} parameter"""
+        self.nextOffset += limit
     def _one(self, id):
         """Implement to find specified item"""
         pass
@@ -74,15 +75,15 @@ class Repository:
         return False
     
 
-    def readAll(self, offset = 0, limit = 20):
+    def readAll(self, offset = 0, limit = 20, search = None):
         """Read all items up to {limit} starting from {offset}"""
 
-        if not authentication.user.requireAccess(self.readRole(None, None), f"Unauthorized read of all {self.name}", f"Offset: {offset}, Limit: {limit}", True):
+        if not authentication.user.requireAccess(self.readRole(None, None), f"Unauthorized read of all {self.name}", f"Offset: {offset}, Limit: {limit}, Search: {search}", True):
             return None # User has no access
         
         authentication.logging.log(f"Read all {self.name}", f"Offset: {offset}, Limit: {limit}")
         
-        items = self._list(offset, limit)
+        items = self._list(offset, limit, search)
 
         # Return only validated items (errors will be logged by self.validate)
         return { id: item for id, item in items.items() if self.validate("Read", item) and self.readRole(id, item) }
@@ -237,10 +238,11 @@ class FileRepository(Repository):
     def __init__(self, path):
         super().__init__()
         self.path = path
+        self.nextOffset = 0
 
 
-    def _list(self, offset, limit):
-        """List all items in the repository (from offset X with a limit of Y)"""
+    def _list(self, offset, limit, search = None):
+        """List all items in the repository (from offset X with a limit of Y and a possible search parameter)"""
         
         try:
             if not os.path.exists(self.path):
@@ -251,14 +253,16 @@ class FileRepository(Repository):
                 content = file.read()
             content = content.strip("\n").split("\n")
             l = 0
+            skip = 0 # Number of skipped items because they did not match the search parameter
             items = {}
             for line in content:
                 l += 1 # Line number
                 if l <= offset:
                     # Skip "offset" number of lines
                     continue
-                if l > offset + limit:
+                if l - skip > offset + limit:
                     # Over the limit
+                    l -= 1
                     break
                 try:
                     # Try to decrypt line and parse as JSON
@@ -267,10 +271,24 @@ class FileRepository(Repository):
                     # Invalid JSON or decryption failed
                     authentication.logging.log("Data parsing", "Raw data: " + str(line), True)
                     continue
+                if search is not None:
+                    # Check if the search parameter is found in any of the fields
+                    found = False
+                    for field in model:
+                        if str(search).upper() in str(model[field]).upper():
+                            found = True
+                            break
+                    if str(search) == str(l):
+                        found = True # Allow search by line number (but exact match only)
+                    if not found:
+                        skip += 1
+                        continue
+                        
                 if self.idField is not None and self.idField in model:
                     items[model[self.idField]] = model
                 else:
                     items[l] = model
+            self.nextOffset = l
             return items
 
         except Exception as e:

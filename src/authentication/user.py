@@ -149,7 +149,7 @@ def changePassword(currentPassword = None):
     
     repository = storage.repositories.Users()
     if currentUser.model is None or not authentication.user.checkPassword(result["currentPassword"]):
-        authentication.logging.log("Change password failed", f"Incorrect current password entered.")
+        authentication.logging.log("Change password failed", f"Incorrect current password entered")
         print(":: The current password is not correct")
     elif currentUser.model is not None:
         # Replace the password hash in the user model

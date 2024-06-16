@@ -77,7 +77,6 @@ class Menu:
         if len(choice) > 0:
             # Run the chosen action
             if choice.upper() not in parsedOptions:
-                print("## PARSED OPTIONS MISMATCH?")
                 return
             cancel = self.options[parsedOptions[choice.upper()]].action()
         else:
@@ -128,7 +127,7 @@ class RepositoryMenu(Menu):
 
         menuOptions = map(lambda id: MenuOption(self.repository.form.row(items[id]), lambda: self.viewItem(id), self.repository.readRole(id, items[id])), items)
         self.options = dict(zip([str(id) for id in items.keys()], menuOptions))
-        self.description = f"Showing items {self.offset+1}-{self.offset+self.limit}\nPlease type the {self.fieldLabel} to view or press Ctrl+C to cancel"
+        self.description = f"Showing items from index {self.offset+1}\nPlease type the {self.fieldLabel} to view or press Ctrl+C to cancel"
         padding = max(len(str(s)) for s in items.keys())
         idLabel = "  " + ("#" if self.repository.idField is None else self.fieldLabel).ljust(padding)[:padding]
         self.description += "\n\n" + self.repository.form.generateHeader(idLabel)
@@ -145,7 +144,7 @@ class RepositoryMenu(Menu):
     def noInput(self):
         """No input: prepare the next page (or loop back to the first page if we've reached the end)"""
         if len(self.options) > 0:
-            self.offset += self.limit
+            self.offset = self.repository.nextOffset
         else:
             if self.offset == 0:
                 return True # Prevent getting "stuck" in a screen that is completely empty
